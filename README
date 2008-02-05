@@ -1,0 +1,438 @@
+= BackgrounDRb
+
+BackgrounDRb is a Ruby job server and scheduler. Its main intent is to be
+used with Ruby on Rails applications for offloading long-running tasks.
+Since a Rails application blocks while serving a request it is best to
+move long-running tasks off into a background process that is divorced
+from http request/response cycle.
+
+This new release of BackgrounDRb is also modular and can be used without Rails so that any Ruby program or framework can use it.
+
+Copyright (c) 2006 Ezra Zygmuntowicz,skaar[at]waste[dot]org,
+
+Copyright (c) 2007 Hemant Kumar (gethemant [at] gmail.com )
+
+
+== Usage
+
+=== Installation
+Getting the code:
+  svn co http://svn.devjavu.com/backgroundrb/trunk
+
+Installation with svn externals:
+  svn propedit svn:externals vendor/plugins
+  [add the following line:]
+  backgroundrb http://svn.devjavu.com/backgroundrb/trunk
+  [exit editor]
+
+  svn ci -m 'updating svn:external svn property for backgroundrb' vendor/plugins
+  svn up vendor/plugins
+  rake backgroundrb:setup
+
+Installation with piston:
+  piston import http://svn.devjavu.com/backgroundrb/trunk/ backgroundrb
+
+=== Configuration
+Use rake task for initial configuration:
+
+* Cron style scheduling and config
+
+   | :backgroundrb:
+   |   :ip: 0.0.0.0
+   |   :port: 11006
+   |   :environment: production
+   |
+   | :schedules:
+   |   :foo_worker:
+   |     :foobar:
+   |       :trigger_args: */5 * * * * * *
+   |       :data: Hello World
+   |     :barbar:
+   |       :trigger_args: */10 * * * * * *
+
+The above sample configuration file would schedule worker methods 'foobar' and 'barbar' from within FooWorker to be executed at different trigger periods.
+Also, it would load production rails environment. If you skip the :environment option, development environment will be loaded by default.
+
+NOTE: Because of the addition of this feature the format of backgroundrb.yml has changed slightly and you must modify your config file according to this new option.
+
+
+* Normal Unix scheduler
+
+   | :backgroundrb:
+   |   :ip: 0.0.0.0
+   |   :port: 11006
+   | :schedules:
+   |   :foo_worker:
+   |     :foobar:
+   |       :trigger_args:
+   |         :start: <%= Time.now + 5.seconds %>
+   |         :end: <%= Time.now + 10.minutes %>
+   |         :repeat_interval: <%= 1.minute %>
+
+* Plain config
+
+   | :backgroundrb:
+   |   :ip: 0.0.0.0
+   |   :port: 11006
+
+
+=== Scheduling
+
+There are three schemes for periodic execution and scheduling.
+
+- Cron Scheduling
+
+  You can use a configuration file for cron scheduling of workers. The method specified in the configuration
+  file would be called periodically. You should accommodate for the fact that the time gap between periodic
+  invocation of a method should be more than the time that is actually required to execute the method.
+  If a method takes longer time than the time window specified, your method invocations will lag
+  perpetually.
+
+
+- Normal Scheduler
+    You can use second form of scheduling as shown in config file.
+
+- add_periodic_timer method
+    A third and very basic form of scheduling that you can use is, "add_periodic_timer" method. You can call this
+    method from anywhere in your worker.
+
+           def create
+             add_periodic_timer(5) { say_hello }
+           end
+The above snippet would register the proc for periodic execution at every 5 seconds.
+
+=== A Word about Cron Scheduler
+
+  Note that the initial field in the BackgrounDRb cron trigger specifies
+  seconds, not minutes as with Unix-cron.
+
+  The fields (which can be an asterisk, meaning all valid patterns) are:
+
+    sec[0,59] min[0,59], hour[0,23], day[1,31], month[1,12], weekday[0,6], year
+
+  The syntax pretty much follows Unix-cron. The following will trigger
+  on the first hour and the thirtieth minute every day:
+
+    0 30 1 * * * *
+
+  The following will trigger the specified method every 10 seconds:
+
+     */10 * * * * * *
+
+  The following will trigger the specified method every 1 hour:
+
+     0 0 * * * * *
+
+  For each field you can use a comma-separated list. The following would
+  trigger on the 5th, 16th and 23rd minute every hour:
+
+    0 5,16,23 * * * * *
+
+  Fields also support ranges, using a dash between values. The following
+  triggers from 8th through the 17th hour, at five past the hour:
+
+    0 5 8-17 * * * *
+
+  Finally, fields support repeat interval syntax. The following triggers
+  every five minutes, every other hour after the sixth hour:
+
+    0 */5 6/2 * * * *
+
+  Here is a more complex example: months 0,2,4,5,6,8,10,12, every day
+  and hour, minutes 1,2,3,4,6,20, seconds: every 5th second counting
+  from the 28th second plus the 59th second:
+
+
+    28/5,59 1-4,6,20 */1 * 5,0/2 * *
+
+  Note that if you specify an asterisk in the first field (seconds)
+  it will trigger every second for the subsequent match.
+
+
+=== Writing Workers
+
+* Generate a Worker
+
+  Install the plugin and run the setup task (rake backgroundrb:setup). Now create a worker using worker generator.
+
+          ./script/generate worker bar
+
+  This will create a bar_worker.rb in your RAILS_ROOT/lib/workers/ (called WORKER_ROOT henceforth). The generated code will look like this:
+
+   class BarWorker < BackgrounDRb::MetaWorker
+     set_worker_name :bar_worker
+     def create
+       # this method is called, when worker is loaded for the first time
+       puts "starting a bar worker"
+     end
+     # define other methods, that you will invoke from rails.
+   end
+
+  All the workers inside WORKER_ROOT directory will be automatically loaded and forked into a separate process.
+  If you don't want to start one particular worker automatically you can use following class method (set_no_auto_load) to disable that behaviour:
+
+
+    class DynamicWorker < BackgrounDRb::MetaWorker
+      set_worker_name :dynamic_worker
+      set_no_auto_load true
+    end
+
+  The 'create' method gets called when a worker is loaded and created. Each worker runs in its
+  own process and you can use 'create' for initializing worker specific stuff.
+
+  The following code snippet would ask bdrb to execute method 'add_values' in 'foo_worker' with
+  arguments '10+10' and return the result.
+
+       MiddleMan.send_request(:worker => :foo_worker, :worker_method => :add_values,:data => "10+10")
+
+ When you are using the 'send_request' method, you are expecting a result back.  As such, the above code
+ will block until your worker invokes a send response. The worker code for handling the above
+
+  method would look like
+
+     class FooWorker < BackgrounDRb::MetaWorker
+       set_worker_name :foo_worker
+       def create(args = nil)
+         #register_status("Running")
+       end
+
+       def add_values(args = nil)
+         evaluated_result = eval(args)
+         return evaluated_result
+       end
+     end
+
+  However, when you want one shot execution of a worker_method without worrying about the results, you
+  can use:
+
+       MiddleMan.ask_work(:worker => :foo_worker, :worker_method => :add_values, :data => "10+10")
+
+  You can also use register_status as described in the following snippet to register the status of
+  your worker with master, which can be directly queried from rails.
+
+       register_status(some_status_data)
+
+  From rails, you can query status of your worker object using following code:
+
+       MiddleMan.ask_status(:worker => :foo_worker)
+
+  The above code would return status object of 'foo_worker'. When you call register_status
+  from a worker, it replaces the older state of the worker with master. Since master process
+  stores the status of the worker, all the status queries are served by master itself. It can be
+
+  used to store result hashes and stuff.
+
+* Starting and stopping a worker from Rails :
+
+  All workers can be dynamically started and stopped from rails. You can also use separate job_keys
+  to run more than one copy of a worker at a time.
+
+  For example, the following code in a rails controller will start "error_worker" and schedule it to run according to the arguments associated with trigger_args.
+
+    MiddleMan.new_worker(:worker => :error_worker, :job_key => :hello_world,:data => "wow_man",:schedule => { :hello_world => { :trigger_args => "*/5 * * * * * *",:data => "hello_world" }})
+
+  NOTE: The first data argument will be passed to the create method inside your worker. However,
+  one specified under the :schedule heading would be used by the worker method when its schedule comes.
+
+
+  To stop a worker, you can use:
+    MiddleMan.delete_worker(:worker => :error_worker, :job_key => :hello_world)
+
+  If no job_key is specified the general worker name itself becomes job_key.
+  You should create job_keys with care so they are never the same for one worker class.
+
+
+* Starting and stopping from CLI :
+
+  To start:
+      ./script/backgroundrb start
+  To stop:
+      ./script/backgroundrb stop
+
+
+* Query Status/Result of a worker :
+
+  All Workers can log their results with master, using the 'register_status' method.
+  This status can be queried from rails using ask_status. For example:
+
+
+   class ProgressWorker < BackgrounDRb::MetaWorker
+     set_worker_name :progress_worker
+     def create
+       @counter = 0
+       add_periodic_timer(2) { increment_counter }
+     end
+     def increment_counter
+       @counter += 1
+       register_status(@counter)
+     end
+   end
+
+  And using MiddleMan proxy, you can keep querying the status of your progress bar:
+
+     MiddleMan.ask_status(:worker => :progress_worker)
+
+* Query status of All workers :
+
+  You can also query the status of all currently running workers in one shot.
+
+    def ask_status
+      t_response = MiddleMan.query_all_workers
+      running_workers = t_response.map { |key,value| "#{key} = #{value}"}.join(',')
+      render :text => running_workers
+    end
+
+  Currently, when a worker is deleted/exits, its result/status is also gone (i.e. you can't
+  query the status of a worker which is not running).  This behaviour is expected to change in future releases.
+
+
+* Important difference between MiddleMan.ask_work and MiddleMan.send_request :
+
+  As noted previously ask_work is used when you want one shot execution of a worker method
+  without waiting for results in rails. So an explicit return statement is not required.
+  But when you use MiddleMan.send_request, you are asking BDRB, "ok please execute this method
+  on worker and I will wait for results until the method returns". Hence in this case, you must return
+  the value you want to get back in rails.
+
+  Not all objects can be dumped in ruby.  If you are trying to send an object which
+  can't be dumped, you will get error messages logged in your log file and will get an error string in your
+  controller, too.
+
+
+  For example, let's say you are invoking method "hello_world" from 'foo_controller' like this:
+
+    worker_response = MiddleMan.send_request(:worker => :foo_worker, :worker_method => :hello_world)
+
+  And 'hello_world' method inside 'foo_worker' looks like this:
+
+    def hello_world
+      a = lambda { "Hello world" }
+      return a
+    end
+
+  Now since a lambda can't be dumped, the worker_response that you will receive in your controller will be,
+  'invalid_result_dump_check_log' and an appropriate error will also be logged in the backgroundrb.log file.
+  Now, such an error could potentially abort the BDRB worker.  Hence, make sure that you
+  avoid such cases.
+
+* Running BackgrounDRb clusters and storing of results in Memcache cluster
+
+  New version allows access to worker status objects even after a worker has died/exited. By default,
+  this data would be held in Master Process memory. Those of you, who want to run, BackgrounDRb in
+  a cluster, and if you run a BackgrounDRb server on each node and would rather want results to be
+  stored in MemCache, you can use following option for storing results in MemCache:
+
+      # backgroundrb.yml
+
+      | :backgroundrb:
+      |   :port: 11006
+      |   :ip: 0.0.0.0
+      |   :log: foreground
+      |   :result_storage:
+      |     :memcache: "10.10.10.2:11211,10.10.10.6:11211"
+
+
+* Using Threads inside BackgrounDRb :
+
+  Remember BackgrounDRb follows event model of network programming, but sad truth of life is
+  not all networking libraries follow this model and hence they make use of blocking IO and threads.
+  BackgrounDRb allows you to run all such tasks concurrently in threads
+  which are internally managed by BackgrounDRb thread pool.
+
+  Each worker has access to object +thread_pool+ which can be used to run task in a thread concurrently.
+
+    thread_pool.defer(wiki_scrap_url) { |wiki_url| scrap_wikipedia(wiki_url) }
+
+  So whatever task you specify within +scrap_wikipedia+ is going to run concurrently.
+
+  WARNING: You shouldn't try to use +register_status+ method from within the block supplied to +defer+. Because, if you do that,
+  you can get corrupted result hashes. However, if you are confident, you should wrap your status_hash ( or whatever data type, you
+  are going to store as a status ) in a mutex and then use +register_status+ . It would make sure that, only one thread
+  resisters status at a time.
+
+* Stopping/deleting a worker :
+
+  For a dynamically started worker, probably you would like to delete it after its done with processing your request.
+  You can delete a worker from rails or from worker itself. To exit a worker from worker itself, simple call +exit+
+  on it. Worker would be deleted.
+
+  To delete the worker from rails, you can use:
+
+     MiddleMan.delete_worker(:worker => :foor_worker, :job_key => :hello_world)
+
+
+
+
+* Internal Server and Unhandled Exception Logging on console :
+
+  Sometimes you may want all the internal error messages and unhandled exceptions to appear on the console.
+  For that, you can start backgroundrb with the following config option :
+
+
+   # backgroundrb.yml
+
+   | :backgroundrb:
+   |   :port: 11006
+   |   :ip: 0.0.0.0
+   |   :log: foreground
+
+  When you are using this config option, make sure that you are starting backgroundrb in foreground mode
+  using :
+
+    ./script/backgroundrb # don't use start argument, if you have :log: foreground set
+
+=== Testing
+
+* where will you be without test cases Phaedrus? This new version comes with a baked in mechanism to write test cases.
+  First make sure that you have bdrb_test_helper.rb in the test directory of your rails app (run
+  rake backgroundrb:setup, if you dont have one).
+
+  Just put your worker test cases in test/unit directory of your rails application and require the helper.
+  Now, you should be good to go.
+
+   require File.join(File.dirname(__FILE__) + "/../bdrb_test_helper")
+   require "god_worker"
+
+   context "When god worker starts" do
+     setup do
+       god_worker = GodWorker.new
+     end
+   end
+
+  All above helper file does is that it stubs out, relevant worker methods,
+  which really need network IO. There can be methods added, which aren't
+  stubbed, for all such methods you are encouraged to stub them and send
+  the patch to the backgroundrb mailing list.
+
+
+
+=== Legacy and deprecated stuff
+
+   Although You need to wrap your head a bit to understanding the "evented" model of network programming,
+   it gets easier once you get hang of it. Much of the older stuff is deprecated. Here is a brief list:
+
+
+   - ACL : gone, trust to thy firewalls.
+
+=== Exciting new stuff
+  * Rock solid stable ( or will be , after few bug reports )
+  * Each worker comes with an Event loop of its own and can potentially do lots of fancy stuff. Two noteworthy methods are:
+
+         connect(ip,port,Handler)
+         start_worker(ip,port,Handler)
+
+    If you are familiar with the EventMachine or Twisted style of network programming, the above methods allow you to
+    start tcp servers inside your workers or let you connect to external tcp servers. For Each accepted client or
+    connected socket, an instance of Handler class would be created and integrated with main event loop.
+    This can be used for worker to worker communication between backgroundrb servers running on two machines.
+
+    You are encouraged to look into framework directory and see the code that implements all this stuff.  The guts of
+    this new version of bdrb is based on packet library(http://packet.googlecode.com )
+
+
+== Online Resources
+- http://svn.devjavu.com/backgroundrb/trunk
+- http://backgroundrb.devjavu.com (trac)
+- http://backgroundrb.rubyforge.org (rdoc)
+
+

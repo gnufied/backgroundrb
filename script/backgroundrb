@@ -1,0 +1,61 @@
+#!/usr/bin/env ruby
+
+rails_root = File.expand_path(File.join(File.dirname(__FILE__)+"/.."))
+RAILS_HOME = rails_root
+PACKET_APP = rails_root + "/vendor/plugins/backgroundrb"
+WORKER_ROOT = rails_root + "/lib/workers"
+SERVER_LOGGER = rails_root + "/log/backgroundrb_server.log"
+
+["server","framework","lib"].each { |x| $LOAD_PATH.unshift(PACKET_APP + "/#{x}")}
+$LOAD_PATH.unshift(WORKER_ROOT)
+
+require RAILS_HOME + '/config/boot.rb'
+require "active_record"
+require "active_support"
+require "rubygems"
+require "packet"
+require "meta_worker"
+require "cron_trigger"
+require "trigger"
+require "log_worker"
+require "yaml"
+require "erb"
+require "logger"
+require "master_worker"
+
+case ARGV[0]
+when 'start'
+  if fork
+    exit
+  else
+    path = "#{RAILS_HOME}/log/backgroundrb.pid"
+    config_file = YAML.load(ERB.new(IO.read("#{RAILS_HOME}/config/backgroundrb.yml")).result)
+    op = File.open(path, "w")
+    op.write(Process.pid().to_s)
+    op.close
+    if config_file[:backgroundrb][:log].nil? or config_file[:backgroundrb][:log] != 'foreground'
+      log_file = File.open(SERVER_LOGGER,"w+")
+      [STDIN, STDOUT, STDERR].each {|desc| desc.reopen(log_file)}
+    end
+
+    BackgrounDRb::MasterProxy.new()
+  end
+when 'stop'
+  path = "#{RAILS_HOME}/log/backgroundrb.pid"
+  pid = nil
+  File.open(path, "r") { |pid_handle| pid = pid_handle.gets.strip.chomp.to_i }
+  begin
+    pgid =  Process.getpgid(pid)
+    Process.kill('TERM', pid)
+    Process.kill('-TERM', pgid)
+    Process.kill('KILL', pid)
+  rescue Errno::ESRCH => e
+    puts "Deleting pid file"
+  rescue
+    puts $!
+  ensure
+    File.delete(path) if File.exists?(path)    
+  end
+else
+  BackgrounDRb::MasterProxy.new()
+end
