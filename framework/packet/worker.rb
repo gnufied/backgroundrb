@@ -11,14 +11,13 @@ module Packet
 
     # method initializes the eventloop for the worker
     def self.start_worker(messengers = {})
-      # @fd_reader = args.shift if args.length > 2
       @msg_writer = messengers[:write_end]
       @msg_reader = messengers[:read_end]
-      # @fd_reader = messengers[:read_fd]
       t_instance = new
       t_instance.worker_options = messengers[:options]
       t_instance.worker_init if t_instance.respond_to?(:worker_init)
       t_instance.start_reactor
+      t_instance
     end
 
     def initialize

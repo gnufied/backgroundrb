@@ -1,4 +1,5 @@
 require File.join(File.dirname(__FILE__) + "/bdrb_test_helper")
+require File.join(RAILS_HOME + "/config/environment")
 require "backgroundrb"
 
 context "Backgroundrb connection in general should" do

@@ -176,7 +176,7 @@ module BackgrounDRb
       @logger = PacketLogger.new(self)
       @thread_pool = ThreadPool.new(pool_size || 20,@logger)
 
-      if(@worker_options && @worker_options[:schedule] && no_auto_load)
+      if(worker_options && worker_options[:schedule] && no_auto_load)
         load_schedule_from_args
       elsif(@config_file[:schedules] && @config_file[:schedules][worker_name.to_sym])
         @my_schedule = @config_file[:schedules][worker_name.to_sym]
@@ -184,7 +184,7 @@ module BackgrounDRb
       end
       if respond_to?(:create)
         create_arity = method(:create).arity
-        (create_arity == 0) ? create : create(@worker_options[:data])
+        (create_arity == 0) ? create : create(worker_options[:data])
       end
       @logger.info "#{worker_name} started"
       @logger.info "Schedules for worker loaded"
@@ -193,7 +193,7 @@ module BackgrounDRb
     # loads workers schedule from options supplied from rails
     # a user may pass trigger arguments to dynamically define the schedule
     def load_schedule_from_args
-      @my_schedule = @worker_options[:schedule]
+      @my_schedule = worker_options[:schedule]
       new_load_schedule if @my_schedule
     end
 
@@ -237,19 +237,6 @@ module BackgrounDRb
       rescue
         return false
       end
-    end
-
-    def load_schedule
-      case @my_schedule[:trigger_args]
-      when String
-        @trigger_type = :cron_trigger
-        cron_args = @my_schedule[:trigger_args] || "0 0 0 0 0"
-        @trigger = BackgrounDRb::CronTrigger.new(cron_args)
-      when Hash
-        @trigger_type = :trigger
-        @trigger = BackgrounDRb::Trigger.new(@my_schedule[:trigger_args])
-      end
-      @run_time = @trigger.fire_time_after(Time.now).to_i
     end
 
     # new experimental scheduler
@@ -334,12 +321,15 @@ module BackgrounDRb
       @worker_method_triggers.delete_if { |key,value| value[:trigger].respond_to?(:end_time) && value[:trigger].end_time <= Time.now }
       
       @worker_method_triggers.each do |key,value|
-        if value[:runtime] < Time.now.to_i
+        time_now = Time.now.to_i
+        if value[:runtime] < time_now
           begin
             (t_data = value[:data]) ? send(key,t_data) : send(key)
           rescue
-            logger.info($!.to_s)
-            logger.info($!.backtrace.join("\n"))
+            # logger.info($!.to_s)
+#             logger.info($!.backtrace.join("\n"))
+            p $!
+            p $!.backtrace
           end
           value[:runtime] = value[:trigger].fire_time_after(Time.now).to_i
         end
@@ -350,26 +340,7 @@ module BackgrounDRb
     def run_user_threads
       @thread_pool.exclusive_run
     end
-
-    #     we are overriding the function that checks for timers
-    #     def check_for_timer_events
-    #       super
-    #       return unless @my_schedule
-    #       if @run_time < Time.now.to_i
-    #         # self.send(@my_schedule[:worker_method]) if self.respond_to?(@my_schedule[:worker_method])
-    #         invoke_worker_method
-    #         @run_time = @trigger.fire_time_after(Time.now).to_i
-    #       end
-    #     end
-
-    def invoke_worker_method
-      if self.respond_to?(@my_schedule[:worker_method]) && @my_schedule[:data]
-        self.send(@my_schedule[:worker_method],@my_schedule[:data])
-      elsif self.respond_to?(@my_schedule[:worker_method])
-        self.send(@my_schedule[:worker_method])
-      end
-    end
-
+    
     private
     def load_rails_env
       db_config_file = YAML.load(ERB.new(IO.read("#{RAILS_HOME}/config/database.yml")).result)
