@@ -88,7 +88,6 @@ context "Cron Trigger should" do
   end
   
   def mock_worker(t_arg,next_time)
-    puts "hello world" 
     @klass.any_instance.stubs(:worker_options).returns(:schedule => t_arg)
     meta_worker = @klass.start_worker
     meta_worker.ivar(:my_schedule).should.not.be(nil)
@@ -117,6 +116,7 @@ context "Cron Trigger should" do
     meta_worker.expects(:foo).never
     meta_worker.check_for_timer_events
   end
+
   
   specify "run task each minute for minute option" do
     t_arg = { :foo => { :trigger_args => "0 1 * * * *"}}
@@ -129,11 +129,20 @@ context "Cron Trigger should" do
   end
   
   specify "should not for minute arguments if time is not reached" do
-    t_arg = { :foo => { :trigger_args => "0 1 * * * *"}}
+    t_arg = { :foo => { :trigger_args => "0 1 * * * *"} }
     meta_worker,time_object,firetime = *mock_worker(t_arg,2*60)
     
     time_object.stubs(:to_i).returns(firetime - 10)
     meta_worker.expects(:foo).never
+    meta_worker.check_for_timer_events
+  end
+  
+  specify "should run at midnight of tuesday to saturday" do
+    t_arg = { :foo => { :trigger_args => "30 * 0 * * 2,3,4,5,6" }}
+    meta_worker,time_object,firetime = *mock_worker(t_arg,24*3600)
+    
+    time_object.stubs(:to_i).returns(firetime + 2)
+    meta_worker.expects(:foo).once
     meta_worker.check_for_timer_events
   end
   
