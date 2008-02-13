@@ -116,7 +116,7 @@ module BackgrounDRb
           next_sec = @sec.detect { |s| s > @t_sec } || @sec.min
           if next_sec < @t_sec
             @t_sec = next_sec
-            next_min = Chronic.parse("next second",:now => current_time)
+            next_min = Chronic.parse("next minute",:now => current_time)
             @t_min,@t_hour,@t_day,@t_month,@t_year,@t_wday = next_min.to_a[1..6]
             retry
           end
@@ -191,6 +191,5 @@ module BackgrounDRb
       r.flatten
     end
   end
-
-
 end
+

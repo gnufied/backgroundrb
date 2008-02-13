@@ -34,7 +34,15 @@ context "Cront Trigger in general" do
     firetime.sec.should == 0
     firetime.day.should == 14
     firetime.month.should == 2
-    
+
+    a = BackgrounDRb::CronTrigger.new("*/10 * * * * * ")
+    t_time = Time.parse("Wed Feb 13 23:17:55 +0530 2008")
+    firetime = a.fire_after_time(t_time)
+    firetime.hour.should == 23
+    firetime.min.should == 18
+    firetime.sec.should == 0
+    firetime.day.should == 13
+    firetime.month.should == 2
   end
   
   specify "should return correct firetime for hour intervals" do

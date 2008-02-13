@@ -250,7 +250,7 @@ module BackgrounDRb
         when Hash
           trigger = BackgrounDRb::Trigger.new(value[:trigger_args])
         end
-        @worker_method_triggers[key] = { :trigger => trigger,:data => value[:data],:runtime => trigger.fire_time_after(Time.now).to_i }
+        @worker_method_triggers[key] = { :trigger => trigger,:data => value[:data],:runtime => trigger.fire_after_time(Time.now).to_i }
       end
     end
 
@@ -331,7 +331,8 @@ module BackgrounDRb
             puts $!
             puts $!.backtrace
           end
-          value[:runtime] = value[:trigger].fire_time_after(Time.now).to_i
+          t_time = value[:trigger].fire_after_time(Time.now)
+          value[:runtime] = t_time.to_i
         end
       end
     end
