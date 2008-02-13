@@ -1,3 +1,4 @@
+require "chronic" 
 require "lib/cron_trigger" 
 require "lib/invalid_dump_error" 
 require "lib/log_worker" 

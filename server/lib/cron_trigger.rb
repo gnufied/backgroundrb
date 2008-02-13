@@ -1,5 +1,8 @@
 module BackgrounDRb
   class CronTrigger
+    WDAYS = { 0 => "Sunday",1 => "Monday",2 => "Tuesday",3 => "Wednesday", 4 => "Thursday", 5 => "Friday", 6 => "Saturday" }
+    LeapYearMonthDays = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    CommonYearMonthDays = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 
     attr_reader :sec, :min, :hour, :day, :month, :wday, :year, :cron_expr
 
@@ -10,154 +13,122 @@ module BackgrounDRb
     def cron_expr=(expr)
       @cron_expr = expr
       self.sec, self.min, self.hour, self.day, self.month, self.wday, self.year = @cron_expr.split(' ')
-      # puts inspect
     end
+    
+    def fire_after_time(p_time)
+      @t_sec,@t_min,@t_hour,@t_day,@t_month,@t_year,@t_wday,@t_yday,@t_idst,@t_zone = p_time.to_a
+      @count = 0
+      loop do 
+        @count += 1
 
-    def fire_time_after(time)
-      sec, min, hour, day, month, year, wday, yday, isdst, zone = time.to_a
-
-      loop do
-        # year
-        unless @year.nil? or @year.include?(year)
-          return nil  if year > @year.max
-          year = @year.detect do |y| y > year end  # next allowable year
+        if @year && !@year.include?(@t_year)
+          return nil if @t_year > @year.max
+          @t_year = @year.detect { |y| y > @t_year }
         end
-
-        # month
-        unless @month.include?(month)
-          # next allowable month
-          next_month = @month.detect(lambda { @month.min }) do |m| m > month end
-          # reset everything lower
-          day, hour, min, sec = @day.min, @hour.min, @min.min, @sec.min
-          # carry case
-          if next_month < month
-            month = next_month
-            year += 1
-            retry
-          end
-          month = next_month
-        end
-
-        # according to crontab(5):
-        # Note: The day of a command’s execution can be specified by two fields — day of month, and day of week.
-        # If both fields are restricted (i.e., aren’t *), the command  will  be  run  when  either
-        # field matches the current time.  For example, ‘‘30 4 1,15 * 5’’ would cause a command to be
-        # run at 4:30 am on the 1st and 15th of each month, plus every Friday.
-        if !day_restricted? and wday_restricted?
-          # unrestricted day, restricted wday. go by wday
-          unless @wday.include?(wday)
-            next_wday = @wday.detect(lambda { @wday.min }) do |w| w > wday end
-            hour, min, sec = @hour.min, @min.min, @sec.min
-            if next_wday < wday
-              # next week.
-              day += + 7 - (wday - next_wday)
-              if day > month_days(year, month)
-                day -= month_days(year, month)
-                month += 1
-              end
-              wday = next_wday              
-              retry
-            end
-            
-            day += (next_wday - wday)
-            wday = next_wday
-          end
-        elsif !wday_restricted? and day_restricted?
-          # unrestricted wday, restricted day. go by day
-          month_days = (1 .. month_days(year, month))
-          days = @day.select do |d| month_days === d end
-          unless days.include?(day)
-            next_day = days.detect(lambda { days.min }) do |d| d > day end
-            hour, min, sec = @hour.min, @min.min, @sec.min
-            if next_day.nil? or next_day < day
-              day = next_day.nil? ? @day.min : next_day
-              month += 1
-              retry
-            end
-            day = next_day
-          end
-        else        
-          # both @day and @wday are restricted, or unrestricted
-          month_days = (1 .. month_days(year, month))
-          days = @day.select do |d| month_days === d end
-          unless days.include?(day) || @wday.include?(wday)
-            next_day = days.detect(lambda { days.min }) do |d| d > day end
-            next_wday = @wday.detect(lambda { @wday.min }) do |w| w > wday end
-            hour, min, sec = @hour.min, @min.min, @sec.min
-            
-            # which is less? next_day or next_wday?
-            # just calculate how many days from 'day' they both are.
-
-            if next_day.nil? or next_day < day
-              next_by_mday = month_days(year, month) - day + (next_day.nil? ? @day.min : next_day)
-            else
-              next_by_mday = next_day - day              
-            end
-            
-            if next_wday.nil? or next_wday < wday
-              next_by_wday = 7 - wday + (next_wday.nil? ? @day.min : next_wday)
-            else
-              next_by_wday = next_wday - wday
-            end
-            
-            next_day = [next_by_wday, next_by_mday].min
-            if next_day + day > month_days(year, month)
-              # next fire lands on next month
-              day += next_day - month_days(year, month)
-              wday += next_day % 7
-              wday -= 7 if wday > 6
-              month += 1
-              if month > 12
-                year += 1
-                month = 1
-              end
-              retry
-            end
-            day += next_day
-          end
-        end
-
         
+        # if range of months doesn't include current month, find next month from the range
+        unless @month.include?(@t_month)
+          next_month = @month.detect { |m| m > @t_month } || @month.min
+          @t_day,@t_hour,@t_min,@t_sec = @day.min,@hour.min,@min.min,@sec.min
+          if next_month < @t_month 
+            @t_month = next_month
+            @t_year += 1 
+            retry
+          end
+          @t_month = next_month
+        end
         
-        # hour
-        unless @hour.include?(hour)
-          next_hour = @hour.detect(lambda { @hour.min }) do |h| h > hour end
-          min, sec = @min.min, @sec.min
-          if next_hour < hour
-            hour = next_hour
-            day += 1
+        if !day_restricted? && wday_restricted?
+          unless @wday.include?(@t_wday)
+            next_wday = @wday.detect { |w| w > @t_wday} || @wday.min
+            @t_hour,@t_min,@t_sec = @hour.min,@min.min,@sec.min
+            t_time = Chronic.parse("next #{WDAYS[next_wday]}",:now => current_time)
+            @t_day,@t_month,@t_year = t_time.to_a[3..5]
+            @t_wday = next_wday
             retry
           end
-          hour = next_hour
-        end
-
-        # min
-        unless @min.include?(min)
-          next_min = @min.detect(lambda { @min.min }) do |m| m > min end
-          sec = @sec.min
-          if next_min < min
-            min = next_min
-            hour += 1
+        elsif !wday_restricted? && day_restricted?
+          day_range = (1.. month_days(@t_year,@t_month))
+          # day array, that includes days which are present in current month
+          day_array = @day.select { |d| day_range === d }
+          unless day_array.include?(@t_day)
+            next_day = day_array.detect { |d| d > @t_day } || day_array.min
+            @t_hour,@t_min,@t_sec = @hour.min,@min.min,@sec.min
+            if !next_day || next_day < @t_day
+              t_time = Chronic.parse("next month",:now => current_time)
+              @t_day = next_day.nil? ? @day.min : next_day
+              @t_month,@t_year = t_time.month,t_time.year
+              retry
+            end
+            @t_day = next_day
+          end
+        else
+          # if both day and wday are restricted cron should give preference to one thats closer to current time
+          day_range = (1 .. month_days(@t_year,@t_month))
+          day_array = @day.select { |d| day_range === d }
+          if !day_array.include?(@t_day) && !@wday.include?(@t_wday)
+            next_day = day_array.detect { |d| d > @t_day } || day_array.min
+            next_wday = @wday.detect { |w| w > @t_wday } || @wday.min
+            @t_hour,@t_min,@t_sec = @hour.min,@min.min,@sec.min
+            
+            # if next_day is nil or less than @t_day it means that it should run in next month
+            if !next_day || next_day < @t_day
+              next_time_mday = Chronic.parse("next month",:now => current_time)
+            else
+              @t_day = next_day
+              next_time_mday = current_time
+            end
+            next_time_wday = Chronic.parse("next #{WDAYS[next_wday]}",:now => current_time)
+            if next_time_mday < next_time_wday
+              @t_day,@t_month,@t_year = next_time_mday.to_a[3..5]
+            else
+              @t_day,@t_month,@t_year = next_time_wday.to_a[3..5]
+            end
             retry
           end
-          min = next_min
         end
-
-        # sec
-        unless @sec.include?(sec)
-          next_sec = @sec.detect(lambda { @sec.min }) do |s| s > sec end
-          if next_sec < sec
-            sec = next_sec
-            min += 1
+        
+        unless @hour.include?(@t_hour)
+          next_hour = @hour.detect { |h| h > @t_hour } || @hour.min
+          @t_min,@t_sec = @min.min,@sec.min
+          if next_hour < @t_hour
+            @t_hour = next_hour
+            next_day = Chronic.parse("next day",:now => current_time)
+            @t_day,@t_month,@t_year,@t_wday = next_day.to_a[3..6]
             retry
           end
-          sec = next_sec
+          @t_hour = next_hour
         end
-
+        
+        unless @min.include?(@t_min)
+          next_min = @min.detect { |m| m > @t_min } || @min.min
+          @t_sec = @sec.min
+          if next_min < @t_min
+            @t_min = next_min
+            next_hour = Chronic.parse("next hour",:now => current_time)
+            @t_hour,@t_day,@t_month,@t_year,@t_wday = next_hour.to_a[2..6]
+            retry
+          end
+          @t_min = next_min
+        end
+        
+        unless @sec.include?(@t_sec)
+          next_sec = @sec.detect { |s| s > @t_sec } || @sec.min
+          if next_sec < @t_sec
+            @t_sec = next_sec
+            next_min = Chronic.parse("next second",:now => current_time)
+            @t_min,@t_hour,@t_day,@t_month,@t_year,@t_wday = next_min.to_a[1..6]
+            retry
+          end
+          @t_sec = next_sec
+        end
         break
-      end
-
-      Time.local sec, min, hour, day, month, year, wday, yday, isdst, zone
+      end # end of loop do
+      current_time
+    end
+    
+    def current_time
+      Time.local(@t_sec,@t_min,@t_hour,@t_day,@t_month,@t_year,@t_wday,nil,@t_idst,@t_zone)
     end
 
     def day_restricted?
@@ -169,17 +140,11 @@ module BackgrounDRb
     end
 
     # TODO: mimic attr_reader to define all of these
-    def sec=(sec)
-      @sec = parse_part(sec, 0 .. 59)
-    end
+    def sec=(sec); @sec = parse_part(sec, 0 .. 59); end
 
-    def min=(min)
-      @min = parse_part(min, 0 .. 59)
-    end
+    def min=(min); @min = parse_part(min, 0 .. 59); end
 
-    def hour=(hour)
-      @hour = parse_part(hour, 0 .. 23)
-    end
+    def hour=(hour); @hour = parse_part(hour, 0 .. 23); end
 
     def day=(day)
       @day = parse_part(day, 1 .. 31)
@@ -196,9 +161,6 @@ module BackgrounDRb
     def wday=(wday)
       @wday = parse_part(wday, 0 .. 6)
     end
-
-    LeapYearMonthDays = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-    CommonYearMonthDays = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
     private
     def month_days(y, m)
       if ((y % 4 == 0) && (y % 100 != 0)) || (y % 400 == 0)
@@ -215,21 +177,20 @@ module BackgrounDRb
       r = Array.new
       part.split(',').each do |p|
         if p =~ /-/  # 0-5
-          r << Range.new(*p.scan(/\d+/)).to_a.map do |x| x.to_i end
-        elsif p =~ /(\*|\d+)\/(\d+)/ and not range.nil?  # */5, 2/10
+          r << Range.new(*(p.scan(/\d+/).map { |x| x.to_i })).map { |x| x.to_i }
+        elsif p =~ /(\*|\d+)\/(\d+)/ && range  # */5, 2/10
           min = $1 == '*' ? 0 : $1.to_i
           inc = $2.to_i
           (min .. range.end).each_with_index do |x, i|
-            r << x  if i % inc == 0
+            r << (range.begin == 1 ? x + 1 : x) if i % inc == 0
           end
         else
           r << p.to_i
         end
       end
-
       r.flatten
     end
-
   end
+
 
 end

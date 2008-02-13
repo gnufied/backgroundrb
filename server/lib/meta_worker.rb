@@ -327,9 +327,9 @@ module BackgrounDRb
             (t_data = value[:data]) ? send(key,t_data) : send(key)
           rescue
             # logger.info($!.to_s)
-#             logger.info($!.backtrace.join("\n"))
-            p $!
-            p $!.backtrace
+            # logger.info($!.backtrace.join("\n"))
+            puts $!
+            puts $!.backtrace
           end
           value[:runtime] = value[:trigger].fire_time_after(Time.now).to_i
         end
