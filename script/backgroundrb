@@ -6,17 +6,15 @@ PACKET_APP = rails_root + "/vendor/plugins/backgroundrb"
 WORKER_ROOT = rails_root + "/lib/workers"
 SERVER_LOGGER = rails_root + "/log/backgroundrb_server.log"
 
-["server","framework","lib"].each { |x| $LOAD_PATH.unshift(PACKET_APP + "/#{x}")}
+["server","server/lib","lib"].each { |x| $LOAD_PATH.unshift(PACKET_APP + "/#{x}")}
 $LOAD_PATH.unshift(WORKER_ROOT)
 
 require RAILS_HOME + '/config/boot.rb'
-require "active_record"
-require "active_support"
 require "yaml"
 require "erb"
-require "logger" 
+require "logger"
 require "packet"
-require "backgroundrb_server" 
+require "backgroundrb_server"
 
 case ARGV[0]
 when 'start'
@@ -49,7 +47,7 @@ when 'stop'
   rescue
     puts $!
   ensure
-    File.delete(path) if File.exists?(path)    
+    File.delete(path) if File.exists?(path)
   end
 else
   BackgrounDRb::MasterProxy.new()
