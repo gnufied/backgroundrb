@@ -16,21 +16,17 @@ Copyright (c) 2007 Hemant Kumar (gethemant [at] gmail.com )
 == Usage
 
 === Installation
-Getting the code:
-  svn co http://svn.devjavu.com/backgroundrb/trunk
+==== Install the dependency :
+  BackgrounDRb no longer bundles Packet gem with itself and hence has added "packet" and "chronic" as
+  dependency. Thus install the dependencies:
 
-Installation with svn externals:
-  svn propedit svn:externals vendor/plugins
-  [add the following line:]
-  backgroundrb http://svn.devjavu.com/backgroundrb/trunk
-  [exit editor]
+  sudo gem install packet chronic
 
-  svn ci -m 'updating svn:external svn property for backgroundrb' vendor/plugins
-  svn up vendor/plugins
-  rake backgroundrb:setup
 
-Installation with piston:
-  piston import http://svn.devjavu.com/backgroundrb/trunk/ backgroundrb
+==== Getting the code:
+   cd vendor/plugins
+   git clone git@gitorious.org:backgroundrb/mainline.git backgroundrb
+   rake backgroundrb:setup
 
 === Configuration
 Use rake task for initial configuration:
