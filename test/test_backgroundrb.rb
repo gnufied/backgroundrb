@@ -8,6 +8,26 @@ context "Backgroundrb connection in general should" do
       MiddleMan.ask_work(:worker => :hello_worker, :worker_method => :say_hello)
     end
   end
+
+  specify "connect to host, port specified in configuration file" do
+
+  end
+
+  specify "write the data according to the binary protocol to the socket" do
+
+  end
+
+  specify "read the data according to the binary protocol and pass to controller" do
+
+  end
+
+  specify "ignore errors while recreating objects from dumps" do
+
+  end
+
+  specify "raise error if writing to the socket failed" do
+
+  end
 end
 
 

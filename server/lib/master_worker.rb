@@ -162,7 +162,13 @@ module BackgrounDRb
         enable_memcache_result_hash(t_reactor) if @config_file[:backgroundrb][:result_storage] && @config_file[:backgroundrb][:result_storage][:memcache]
         t_reactor.start_worker(:worker => :log_worker)
         t_reactor.start_server(@config_file[:backgroundrb][:ip],@config_file[:backgroundrb][:port],MasterWorker) { |conn|  conn.debug_logger = debug_logger }
+        t_reactor.next_turn { reload_workers }
       end
+    end
+
+    # method will reload workers that should be loaded on each schedule
+    def reload_workers
+
     end
 
     def load_rails_env
