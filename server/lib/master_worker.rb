@@ -9,7 +9,7 @@ module BackgrounDRb
       if @log_mode == :foreground
         @logger = ::Logger.new(STDOUT)
       else
-        @logger = ::Logger.new("#{RAILS_HOME}/log/backgroundrb_debug.log")
+        @logger = ::Logger.new("#{RAILS_HOME}/log/backgroundrb_#{CONFIG_FILE[:backgroundrb][:port]}_debug.log")
       end
     end
 
@@ -153,7 +153,7 @@ module BackgrounDRb
     attr_accessor :config_file
     def initialize
       raise "Running old Ruby version, upgrade to Ruby >= 1.8.5" unless check_for_ruby_version
-      @config_file = YAML.load(ERB.new(IO.read("#{RAILS_HOME}/config/backgroundrb.yml")).result)
+      @config_file = BackgrounDRb::Config.read_config("#{RAILS_HOME}/config/backgroundrb.yml")
       log_flag = @config_file[:backgroundrb][:debug_log].nil? ? true : @config_file[:backgroundrb][:debug_log]
       debug_logger = DebugMaster.new(@config_file[:backgroundrb][:log],log_flag)
 

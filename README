@@ -278,8 +278,16 @@ The above snippet would register the proc for periodic execution at every 5 seco
       render :text => running_workers
     end
 
-  Currently, when a worker is deleted/exits, its result/status is also gone (i.e. you can't
-  query the status of a worker which is not running).  This behaviour is expected to change in future releases.
+  Even after a worker is deleted/exits status objects of worker can be still be accessed byte-compiled  
+  ask_status method. If you want to reset the results, you must do so in create method of 
+  worker using 'register_status'.
+
+* Loading Various Rails Environment :
+  
+  You can load use backgroundrb.yml file to load different rails environments, or you can use
+  command line argument as shown below :
+    
+    ./script/backgroundrb -e development          
 
 
 * Important difference between MiddleMan.ask_work and MiddleMan.send_request :
@@ -406,7 +414,6 @@ The above snippet would register the proc for periodic execution at every 5 seco
 
    Although You need to wrap your head a bit to understanding the "evented" model of network programming,
    it gets easier once you get hang of it. Much of the older stuff is deprecated. Here is a brief list:
-
 
    - ACL : gone, trust to thy firewalls.
 

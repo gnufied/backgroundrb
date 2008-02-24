@@ -3,7 +3,7 @@ class LogWorker < Packet::Worker
   #set_no_auto_load(true)
   attr_accessor :log_file
   def worker_init
-    @log_file = Logger.new("#{RAILS_HOME}/log/backgroundrb.log")
+    @log_file = Logger.new("#{RAILS_HOME}/log/backgroundrb_#{CONFIG_FILE[:backgroundrb][:port]}.log")
   end
 
   def receive_data p_data

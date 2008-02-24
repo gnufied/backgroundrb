@@ -171,7 +171,7 @@ module BackgrounDRb
     # does initialization of worker stuff and invokes create method in
     # user defined worker class
     def worker_init
-      @config_file = YAML.load(ERB.new(IO.read("#{RAILS_HOME}/config/backgroundrb.yml")).result)
+      @config_file = BackgrounDRb::Config.read_config("#{RAILS_HOME}/config/backgroundrb.yml")
       load_rails_env
       @logger = PacketLogger.new(self)
       @thread_pool = ThreadPool.new(pool_size || 20,@logger)

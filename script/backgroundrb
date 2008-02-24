@@ -4,7 +4,6 @@ rails_root = File.expand_path(File.join(File.dirname(__FILE__)+"/.."))
 RAILS_HOME = rails_root
 PACKET_APP = rails_root + "/vendor/plugins/backgroundrb"
 WORKER_ROOT = rails_root + "/lib/workers"
-SERVER_LOGGER = rails_root + "/log/backgroundrb_server.log"
 
 ["server","server/lib","lib"].each { |x| $LOAD_PATH.unshift(PACKET_APP + "/#{x}")}
 $LOAD_PATH.unshift(WORKER_ROOT)
@@ -13,20 +12,25 @@ require RAILS_HOME + '/config/boot.rb'
 require "yaml"
 require "erb"
 require "logger"
+require 'rubygems'
 require "packet"
 require "backgroundrb_server"
+require "bdrb_config.rb"
+
+BackgrounDRb::Config.parse_cmd_options
+CONFIG_FILE = BackgrounDRb::Config.read_config("#{RAILS_HOME}/config/backgroundrb.yml")
+pid_file = "#{RAILS_HOME}/tmp/pids/backgroundrb_#{CONFIG_FILE[:backgroundrb][:port]}.pid"
+SERVER_LOGGER = "#{RAILS_HOME}/log/backgroundrb_server_#{CONFIG_FILE[:backgroundrb][:port]}.log"
 
 case ARGV[0]
 when 'start'
   if fork
     exit
   else
-    path = "#{RAILS_HOME}/log/backgroundrb.pid"
-    config_file = YAML.load(ERB.new(IO.read("#{RAILS_HOME}/config/backgroundrb.yml")).result)
-    op = File.open(path, "w")
+    op = File.open(pid_file, "w")
     op.write(Process.pid().to_s)
     op.close
-    if config_file[:backgroundrb][:log].nil? or config_file[:backgroundrb][:log] != 'foreground'
+    if CONFIG_FILE[:backgroundrb][:log].nil? or CONFIG_FILE[:backgroundrb][:log] != 'foreground'
       log_file = File.open(SERVER_LOGGER,"w+")
       [STDIN, STDOUT, STDERR].each {|desc| desc.reopen(log_file)}
     end
@@ -34,9 +38,8 @@ when 'start'
     BackgrounDRb::MasterProxy.new()
   end
 when 'stop'
-  path = "#{RAILS_HOME}/log/backgroundrb.pid"
   pid = nil
-  File.open(path, "r") { |pid_handle| pid = pid_handle.gets.strip.chomp.to_i }
+  File.open(pid_file, "r") { |pid_handle| pid = pid_handle.gets.strip.chomp.to_i }
   begin
     pgid =  Process.getpgid(pid)
     Process.kill('TERM', pid)
@@ -47,7 +50,7 @@ when 'stop'
   rescue
     puts $!
   ensure
-    File.delete(path) if File.exists?(path)
+    File.delete(pid_file) if File.exists?(pid_file)
   end
 else
   BackgrounDRb::MasterProxy.new()

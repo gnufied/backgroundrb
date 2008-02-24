@@ -4,13 +4,14 @@ require "pathname"
 require "packet" 
 BACKGROUNDRB_ROOT = Pathname.new(RAILS_ROOT).realpath.to_s
 require "bdrb_conn_error"
+require "bdrb_config"
 
 module BackgrounDRb
 end
 class BackgrounDRb::WorkerProxy
   include Packet::NbioHelper
   def self.init
-    @@config = YAML.load(ERB.new(IO.read("#{BACKGROUNDRB_ROOT}/config/backgroundrb.yml")).result)
+    @@config = BackgrounDRb::Config.read_config("#{BACKGROUNDRB_ROOT}/config/backgroundrb.yml")
     @@server_ip = @@config[:backgroundrb][:ip]
     @@server_port = @@config[:backgroundrb][:port]
     new
