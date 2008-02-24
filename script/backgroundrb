@@ -12,7 +12,6 @@ require RAILS_HOME + '/config/boot.rb'
 require "yaml"
 require "erb"
 require "logger"
-require 'rubygems'
 require "packet"
 require "backgroundrb_server"
 require "bdrb_config.rb"
