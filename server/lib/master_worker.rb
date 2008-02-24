@@ -80,7 +80,8 @@ module BackgrounDRb
         # pgid = Process.getpgid(worker_instance.pid)
         Process.kill('TERM',worker_instance.pid)
         # Process.kill('-TERM',pgid)
-        Process.kill('KILL',worker_instance.pid)
+        
+        # Process.kill('KILL',worker_instance.pid)
       rescue Packet::DisconnectError => sock_error
         # reactor.live_workers.delete(worker_name_key)
         reactor.remove_worker(sock_error)
