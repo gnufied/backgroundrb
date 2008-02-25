@@ -80,7 +80,7 @@ module BackgrounDRb
         # pgid = Process.getpgid(worker_instance.pid)
         Process.kill('TERM',worker_instance.pid)
         # Process.kill('-TERM',pgid)
-        
+
         # Process.kill('KILL',worker_instance.pid)
       rescue Packet::DisconnectError => sock_error
         # reactor.live_workers.delete(worker_name_key)
@@ -163,7 +163,7 @@ module BackgrounDRb
         enable_memcache_result_hash(t_reactor) if @config_file[:backgroundrb][:result_storage] && @config_file[:backgroundrb][:result_storage][:memcache]
         t_reactor.start_worker(:worker => :log_worker)
         t_reactor.start_server(@config_file[:backgroundrb][:ip],@config_file[:backgroundrb][:port],MasterWorker) { |conn|  conn.debug_logger = debug_logger }
-        t_reactor.next_turn { reload_workers }
+        #t_reactor.next_turn { reload_workers }
       end
     end
 
