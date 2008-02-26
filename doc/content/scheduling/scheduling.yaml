@@ -2,3 +2,4 @@
 filters_pre: "textile"
 # Custom
 title: "Scheduling Tasks using BackgrounDRb"
+sidebar_items: [["Timers", "#timer_scheduling"], ["Unix Scheduler", "#unix_scheduling"], ["Cron Scheduler", "#cron_scheduling"]]
