@@ -1,0 +1,10 @@
+<div id="content">
+
+%(entry-title)<a name="simple_schedule"> Timer Based Scheduling </a>%
+
+*BackgrounDRb* uses *packet* for providing networking capabilities and as a result, simple
+tasks in the workers can be scheduled using @add_timer@ and @add_periodic_timer@ methods.
+For example:
+
+
+</div>

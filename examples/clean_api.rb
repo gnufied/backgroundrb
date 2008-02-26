@@ -1,20 +1,30 @@
-
 # To execute task without a job key
+# Current API
+MiddleMan.ask_work(:worker => :foo_worker, :worker_method => :some_work, :data => "Hello World")
+
+# new API
 worker = MiddleMan.worker(:foo_worker)
 worker.some_work("hello World")
 
 # to execute task in single step
 MiddleMan.worker(:foo_worker).some_work("hello World")
 
-# Current API
-MiddleMan.ask_work(:worker => :foo_worker, :worker_method => :some_work, :data => "Hello World")
 
 # To start a worker
+
+# current API
+MiddleMan.new_worker(:worker => :foo_worker, :job_key => "wow",:data => "Hello World")
+
+# new API
 worker = MiddelMan.new_worker(:foo_worker,:job_key => "Wow")
 worker.hello_world("Wow man")
 worker.delete
 
 # to Ask status
+# Current API
+MiddleMan.ask_status(:worker => :foo_worker)
+
+# new API
 MiddleMan.worker(:foo_worker).ask_status
 
 # To delete a worker
@@ -65,4 +75,4 @@ MiddleMan.all_worker_info
 
 
 
-
+# For enabling reloading of workers when schedules are ready.

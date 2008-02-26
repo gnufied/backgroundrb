@@ -2,18 +2,22 @@ module BackgrounDRb
   # this class is a dummy class that implements things required for passing data to
   # actual logger worker
   class PacketLogger
-    def initialize(worker)
+    def initialize(worker,log_flag = true)
+      @log_flag = log_flag
       @worker = worker
     end
     def info(p_data)
+      return unless @log_flag
       @worker.send_request(:worker => :log_worker, :data => p_data)
     end
 
     def debug(p_data)
+      return unless @log_flag
       @worker.send_request(:worker => :log_worker, :data => p_data)
     end
 
     def error(p_data)
+      return unless @log_flag
       @worker.send_request(:worker => :log_worker, :data => p_data)
     end
   end
@@ -172,9 +176,9 @@ module BackgrounDRb
     # user defined worker class
     def worker_init
       @config_file = BackgrounDRb::Config.read_config("#{RAILS_HOME}/config/backgroundrb.yml")
+      log_flag = @config_file[:backgroundrb][:debug_log].nil? ? true : @config_file[:backgroundrb][:debug_log]
       load_rails_env
-      @logger = PacketLogger.new(self)
-      
+      @logger = PacketLogger.new(self,log_flag)
       @thread_pool = ThreadPool.new(pool_size || 20,@logger)
 
       if(worker_options && worker_options[:schedule] && no_auto_load)
