@@ -1,3 +1,8 @@
+2008-02-25  hemant kumar  <hemant@shire>
+
+	* Commited Patch by Alex which lets BackgrounDRb to have command line arguments and loading of specific environments
+	through command line argument.
+
 2008-02-14  hemant kumar  <hemant@shire>
 
 	* Added TestCases for Cron Triggers, Meta Workers and stuff. We are heading towards proper code coverage with specs.
