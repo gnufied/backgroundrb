@@ -52,3 +52,17 @@ context "Master Worker in general should" do
 
   end
 end
+
+context "Master worker for reloadable workers" do 
+  specify "should load schedule of workers which are reloadable" do
+    
+  end
+  
+  specify "should invoke worker methods which are ready to run" do
+    
+  end
+  
+  specify "should not run worker methods which are not ready to run" do
+    
+  end
+end

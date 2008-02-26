@@ -162,13 +162,20 @@ module BackgrounDRb
     attr_accessor :config_file, :my_schedule, :run_time, :trigger_type, :trigger
     attr_accessor :logger, :thread_pool
     iattr_accessor :pool_size
+    iattr_accessor :reload_flag
+    
     @pool_size = nil
-
+    @reload_flag = false
+    
     def self.pool_size(size = nil)
-      if size
-        @pool_size = size
-      else
-        @pool_size
+      @pool_size = size if size
+      @pool_size
+    end
+    
+    def self.reload_on_schedule(flag = nil)
+      if flag
+        self.no_auto_load = true 
+        self.reload_flag = true
       end
     end
 

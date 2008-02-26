@@ -163,8 +163,43 @@ module BackgrounDRb
         enable_memcache_result_hash(t_reactor) if @config_file[:backgroundrb][:result_storage] && @config_file[:backgroundrb][:result_storage][:memcache]
         t_reactor.start_worker(:worker => :log_worker) if log_flag
         t_reactor.start_server(@config_file[:backgroundrb][:ip],@config_file[:backgroundrb][:port],MasterWorker) { |conn|  conn.debug_logger = debug_logger }
-        #t_reactor.next_turn { reload_workers }
+        t_reactor.next_turn { reload_workers }
       end
+    end
+    
+    # method should find reloadable workers and load their schedule from config file
+    def find_reloadable_worker
+      t_workers = Dir["#{WORKER_ROOT}/**/*.rb"]
+      @reloadable_workers = t_workers.map do |x|
+        worker_name = File.basename(b_worker,".rb")
+        require worker_name
+        worker_klass = Object.const_get(packet_classify(worker_name))
+        worker_klass.reload_flag ? worker_klass : nil
+      end.compact
+      @worker_triggers = { }
+      @reloadable_workers.each do |t_worker|
+        schedule = load_reloadable_schedule(t_worker)
+        if schedule && !schedule.empty?
+          @worker_triggers[t_worker.worker_name.to_sym] = schedule
+        end
+      end
+    end
+    
+    def load_reloadable_schedule(t_worker)
+      worker_method_triggers = { }
+      
+      worker_schedule = @config_file[t_worker.worker_name.to_sym]
+      worker_schedule && worker_schedule.each do |key,value|
+        case value[:trigger_args]
+        when String
+          cron_args = value[:trigger_args] || "0 0 0 0 0"
+          trigger = BackgrounDRb::CronTrigger.new(cron_args)
+        when Hash
+          trigger = BackgrounDRb::Trigger.new(value[:trigger_args])
+        end
+        worker_method_triggers[key] = { :trigger => trigger,:data => value[:data],:runtime => trigger.fire_after_time(Time.now).to_i }
+      end
+      worker_method_triggers
     end
 
     # method will reload workers that should be loaded on each schedule
