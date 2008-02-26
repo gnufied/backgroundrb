@@ -174,6 +174,7 @@ module BackgrounDRb
       @config_file = BackgrounDRb::Config.read_config("#{RAILS_HOME}/config/backgroundrb.yml")
       load_rails_env
       @logger = PacketLogger.new(self)
+      
       @thread_pool = ThreadPool.new(pool_size || 20,@logger)
 
       if(worker_options && worker_options[:schedule] && no_auto_load)
@@ -224,8 +225,10 @@ module BackgrounDRb
       else
         result = self.send(user_input[:worker_method])
       end
-      result = "dummy_result" unless result
-      send_response(p_data,result) if can_dump?(result)
+      if p_data[:result]
+        result = "dummy_result" unless result
+        send_response(p_data,result) if can_dump?(result)
+      end
     end
 
     def can_dump?(p_object)
@@ -273,22 +276,10 @@ module BackgrounDRb
       end
     end
 
-    def register_result p_data
-      result = { :type => :result, :data => p_data }
-      begin
-        send_data(result)
-      rescue TypeError => e
-        logger.info(e.to_s)
-        logger.info(e.backtrace.join("\n"))
-      rescue
-        logger.info($!.to_s)
-        logger.info($!.backtrace.join("\n"))
-      end
-    end
-
     def send_response input,output
       input[:data] = output
       input[:type] = :response
+      
       begin
         send_data(input)
       rescue TypeError => e

@@ -101,7 +101,7 @@ module BackgrounDRb
       t_data.delete(:worker)
       t_data.delete(:type)
       begin
-        ask_worker(worker_name_key,:data => t_data, :type => :request)
+        ask_worker(worker_name_key,:data => t_data, :type => :request, :result => false)
       rescue Packet::DisconnectError => sock_error
         reactor.live_workers.delete(worker_name_key)
       rescue
@@ -126,7 +126,7 @@ module BackgrounDRb
       t_data.delete(:worker)
       t_data.delete(:type)
       begin
-        ask_worker(worker_name_key,:data => t_data, :type => :request)
+        ask_worker(worker_name_key,:data => t_data, :type => :request,:result => true)
       rescue Packet::DisconnectError => sock_error
         reactor.live_workers.delete(worker_name_key)
       rescue
