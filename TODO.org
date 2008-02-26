@@ -1,3 +1,8 @@
 * Implement a way to share code between workers.
 * Implement a way to test workers.
+* Implement proper logger stuff so as people can set log level and stuff 
+* Implement a way to disable logger workers.
+* Implement backgroundrb to work across machines.
+* Make the API more simple use to use and less mouthfull.
+
 
