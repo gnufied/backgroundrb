@@ -1,1 +1,7 @@
-Hi, I'm a new page!
+<div id="content">
+
+%(entry-title)<a name="introduction"> Introduction </a>%     
+
+Workers are your building blocks of Asynchronous Task Processing.
+
+</div>

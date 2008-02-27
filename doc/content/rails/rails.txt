@@ -1,1 +1,62 @@
-Hi, I'm a new page!
+<div id="content">
+
+%(entry-title)<a name="introduction"> Introduction </a>%
+
+BackgrounDRb offers seemless integration with rails. You can invoke random tasks defined in your
+workers from rails. You can pass arguments, collect results, monitor status of workers and other
+statistics.
+
+BackgrounDRb offers two sets of APIs for interacting with workers from rails. One is newer, slicker
+set and other is older legacy compatibility API. 1.0.3 version made a departure and implemented newer
+cleaner APIs, we will discuss them first, before getting acquinted with older API. Also, no matter
+which API you are using @MiddleMan@ is the proxy object that lets you handle all this.
+
+%(entry-title)<a name="newer_api"> Newer API </a>%
+
+p(sub-title). Invoke an asynchronous task on a worker :
+
+Following snippet will invoke method @some_task@ with argument @data@ in @foo_worker@. Also, method will
+be invoked asychrounously and Rails won't wait for result from BackgrounDRb server.
+
+<pre class="multiline">worker = MiddleMan.worker(:foo_worker)
+worker.some_task(data,false) </pre>
+
+When you invoke @MiddleMan.worker(:foo_worker)@ it returns a worker proxy, hence you can combine above two lines in
+one as follows:
+
+<pre class="boxed">MiddleMan.worker(:foo_worker,<optional_job_key>).some_task(data,false) </pre>
+
+Above snippet also demonstrates that, if your worker was started with a @job_key@ you can use it to
+get correct proper worker proxy.
+
+p(sub-title). Invoke a method on worker and get results :
+
+Following snippet will invoke method @some_task@ with argument @data@ in @foo_worker@. Also, method block
+until BackgrounDRb server returns a result.
+
+<pre class="multiline">worker = MiddleMan.worker(:foo_worker)
+result = worker.some_task(data,false) </pre>
+
+As illustrated above, you can use @job_key@ or make them in single line too. 
+
+p(sub-title). Fetch Status/Result Objects of a worker :
+
+If you are using @register_status@ in your worker code to store status/result objects, you can retrieve them from 
+rails using:
+
+<pre class="boxed">status_obj = MiddleMan.worker(:foo_worker).ask_status </pre>
+
+You can as usual use @job_key@ if *worker was started with a job_key*. 
+
+p(sub-title). Start a Worker :
+
+To start a worker from rails:
+
+<pre class="boxed">MiddleMan.new_worker(:foo_worker,"my_secret_job_key") </pre>
+
+Important thing to be kept in mind is, when you are creating a worker using above approach, you
+must use a unique @job_key@ while starting the worker. Also, while invoking any of the other methods
+like @ask_status@, @worker_info@ or one of the worker methods, you must use @job_key@.
+
+
+</div>
