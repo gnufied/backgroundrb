@@ -1,6 +1,5 @@
 class HelloWorker < BackgrounDRb::MetaWorker
   set_worker_name :hello_worker
-  reload_on_schedule true
   pool_size 10
   
   def create(args = nil)

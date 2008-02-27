@@ -151,21 +151,32 @@ module BackgrounDRb
   end
 
   class MasterProxy
-    attr_accessor :config_file,:reloadable_workers
+    attr_accessor :config_file,:reloadable_workers,:worker_triggers,:reactor
     def initialize
       raise "Running old Ruby version, upgrade to Ruby >= 1.8.5" unless check_for_ruby_version
       @config_file = BackgrounDRb::Config.read_config("#{RAILS_HOME}/config/backgroundrb.yml")
-      log_flag = @config_file[:backgroundrb][:debug_log].nil? ? true : @config_file[:backgroundrb][:debug_log]
-      debug_logger = DebugMaster.new(@config_file[:backgroundrb][:log],log_flag)
+      
+      log_flag = CONFIG_FILE[:backgroundrb][:debug_log].nil? ? true : CONFIG_FILE[:backgroundrb][:debug_log]
+      debug_logger = DebugMaster.new(CONFIG_FILE[:backgroundrb][:log],log_flag)
 
       load_rails_env
+      
+      find_reloadable_worker
+      
       Packet::Reactor.run do |t_reactor|
-        enable_memcache_result_hash(t_reactor) if @config_file[:backgroundrb][:result_storage] && @config_file[:backgroundrb][:result_storage][:memcache]
+        @reactor = t_reactor
+        enable_memcache_result_hash(t_reactor) if CONFIG_FILE[:backgroundrb][:result_storage] && CONFIG_FILE[:backgroundrb][:result_storage][:memcache]
         t_reactor.start_worker(:worker => :log_worker) if log_flag
-        t_reactor.start_server(@config_file[:backgroundrb][:ip],@config_file[:backgroundrb][:port],MasterWorker) { |conn|  conn.debug_logger = debug_logger }
+        t_reactor.start_server(CONFIG_FILE[:backgroundrb][:ip],CONFIG_FILE[:backgroundrb][:port],MasterWorker) { |conn|  conn.debug_logger = debug_logger }
         t_reactor.next_turn { reload_workers }
       end
     end
+    
+    def gen_worker_key(worker_name,job_key = nil)
+      return worker_name if job_key.nil?
+      return "#{worker_name}_#{job_key}".to_sym
+    end
+
     
     # method should find reloadable workers and load their schedule from config file
     def find_reloadable_worker
@@ -187,8 +198,8 @@ module BackgrounDRb
     
     def load_reloadable_schedule(t_worker)
       worker_method_triggers = { }
+      worker_schedule = CONFIG_FILE[:schedules][t_worker.worker_name.to_sym]
       
-      worker_schedule = @config_file[t_worker.worker_name.to_sym]
       worker_schedule && worker_schedule.each do |key,value|
         case value[:trigger_args]
         when String
@@ -204,16 +215,55 @@ module BackgrounDRb
 
     # method will reload workers that should be loaded on each schedule
     def reload_workers
+      return if worker_triggers.empty?
+      worker_triggers.each do |key,value|
+        value.delete_if { |key,value| value[:trigger].respond_to?(:end_time) && value[:trigger].end_time <= Time.now }
+      end
       
+      worker_triggers.each do |worker_name,trigger|
+        trigger.each do |key,value|
+          time_now = Time.now.to_i
+          if value[:runtime] < time_now
+            load_and_invoke(worker_name,key,value)
+            t_time = value[:trigger].fire_after_time(Time.now)
+            value[:runtime] = t_time.to_i
+          end
+        end
+      end
+    end
+    
+    # method will load the worker and invoke worker method
+    def load_and_invoke(worker_name,p_method,data)
+      begin
+        require worker_name.to_s
+        job_key = Packet::Guid.hexdigest
+        @reactor.start_worker(:worker => worker_name,:job_key => job_key)
+        worker_name_key = gen_worker_key(worker_name,job_key)
+        data_request = {:data => { :worker_method => p_method,:data => data[:data]},
+          :type => :request, :result => false 
+        }
+    
+        exit_request = {:data => { :worker_method => :exit},
+          :type => :request, :result => false 
+        }
+    
+        @reactor.live_workers[worker_name_key].send_request(data_request)
+        @reactor.live_workers[worker_name_key].send_request(exit_request)
+      rescue LoadError
+        puts "no such worker #{worker_name}" 
+      rescue MissingSourceFile
+        puts "no such worker #{worker_name}" 
+        return
+      end
     end
 
     def load_rails_env
       db_config_file = YAML.load(ERB.new(IO.read("#{RAILS_HOME}/config/database.yml")).result)
-      run_env = @config_file[:backgroundrb][:environment] || 'development'
+      run_env = CONFIG_FILE[:backgroundrb][:environment] || 'development'
       ENV["RAILS_ENV"] = run_env
       RAILS_ENV.replace(run_env) if defined?(RAILS_ENV)
       require RAILS_HOME + '/config/environment.rb'
-      load_rails_models unless @config_file[:backgroundrb][:lazy_load]
+      load_rails_models unless CONFIG_FILE[:backgroundrb][:lazy_load]
       ActiveRecord::Base.allow_concurrency = true
     end
 
@@ -223,8 +273,10 @@ module BackgrounDRb
       models.each { |x|
         begin
           require x
-        rescue
-          p $!
+        rescue LoadError
+          next
+        rescue MissingSourceFile
+          next
         end
       }
     end
@@ -240,7 +292,7 @@ module BackgrounDRb
         :urlencode => false
       }
       cache = MemCache.new(memcache_options)
-      cache.servers = @config_file[:backgroundrb][:result_storage][:memcache].split(',')
+      cache.servers = CONFIG_FILE[:backgroundrb][:result_storage][:memcache].split(',')
       t_reactor.set_result_hash(cache)
     end
 
