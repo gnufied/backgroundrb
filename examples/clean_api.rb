@@ -16,7 +16,9 @@ MiddleMan.worker(:foo_worker).some_work("hello World")
 MiddleMan.new_worker(:worker => :foo_worker, :job_key => "wow",:data => "Hello World")
 
 # new API
-worker = MiddelMan.new_worker(:foo_worker,:job_key => "Wow")
+worker = MiddelMan.new_worker(:foo_worker,:job_key => "Wow",:data => "Wow man",\
+                              :schedule => { :hello_world => { :trigger_args => "*/5 * * * * * *",:data => "hello_world" }})
+
 worker.hello_world("Wow man")
 worker.delete
 

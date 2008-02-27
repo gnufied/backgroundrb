@@ -9,31 +9,36 @@ module BackgrounDRb
     end
     
     def method_missing(method_id,*args)
-      @worker_method = method_id
-      @data = args[0]
+      worker_method = method_id
+      p worker_method
+      
+      data = args[0]
+      
+      p data
+      
       flag = args[1]
-      case @worker_method
+      
+      p flag
+      
+      case worker_method
       when :ask_status
-        if job_key 
-          MiddleMan.ask_status(:worker => worker_name,:job_key => job_key)
-        else
-          MiddleMan.ask_status(:worker => worker_name)
-        end
+        MiddleMan.ask_status(compact(:worker => worker_name,:job_key => job_key))
       when :worker_info
-    
-      when :all_worker_info
-        
-      when :new_worker
-        
+        MiddleMan.worker_info(compact(:worker => worker_name,:job_key => job_key))
       when :delete
-        
+        MiddleMan.delete_worker(compact(:worker => worker_name, :job_key => job_key))
       else
-        
-        
+        if flag
+          MiddleMan.send_request(compact(:worker => worker_name,:job_key => job_key,:worker_method => worker_method,:data => data))
+        else
+          MiddleMan.ask_work(compact(:worker => worker_name,:job_key => job_key,:worker_method => worker_method,:data => data))
+        end
       end
     end
     
-    def pack_modifers(p_option = { })
+    def compact(options = { })
+      options.delete_if { |key,value| value.nil? }
+      options
     end
 
     

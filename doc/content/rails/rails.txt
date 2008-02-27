@@ -19,12 +19,15 @@ Following snippet will invoke method @some_task@ with argument @data@ in @foo_wo
 be invoked asychrounously and Rails won't wait for result from BackgrounDRb server.
 
 <pre class="multiline">worker = MiddleMan.worker(:foo_worker)
-worker.some_task(data,false) </pre>
+worker.some_task(data) </pre>
+
+Here, I would like to illustrate  a point that contrary to general percenption, since @some_task@ method is being
+executed asyhcrounously, don't expect any meaningful return values from second line.
 
 When you invoke @MiddleMan.worker(:foo_worker)@ it returns a worker proxy, hence you can combine above two lines in
 one as follows:
 
-<pre class="boxed">MiddleMan.worker(:foo_worker,<optional_job_key>).some_task(data,false) </pre>
+<pre class="boxed">MiddleMan.worker(:foo_worker,<optional_job_key>).some_task(data) </pre>
 
 Above snippet also demonstrates that, if your worker was started with a @job_key@ you can use it to
 get correct proper worker proxy.
@@ -35,9 +38,11 @@ Following snippet will invoke method @some_task@ with argument @data@ in @foo_wo
 until BackgrounDRb server returns a result.
 
 <pre class="multiline">worker = MiddleMan.worker(:foo_worker)
-result = worker.some_task(data,false) </pre>
+result = worker.some_task(data,true) </pre>
 
-As illustrated above, you can use @job_key@ or make them in single line too. 
+As illustrated above, you can use @job_key@ or make them in single line too. When you are invoking a method
+on your worker first optional argument will be passed to your worker method and second optional argument @true|false@
+indicates whether we should wait for result from _BackgrounDRb_ server or not.
 
 p(sub-title). Fetch Status/Result Objects of a worker :
 
@@ -52,11 +57,45 @@ p(sub-title). Start a Worker :
 
 To start a worker from rails:
 
-<pre class="boxed">MiddleMan.new_worker(:foo_worker,"my_secret_job_key") </pre>
+<pre class="multiline">used_job_key = MiddleMan.new_worker(:worker => :foo_worker,\
+     :job_key => "my_secret_job_key") </pre>
+
+@new_worker@ will always return @job_key@ generated for the worker. It will be same as @job_key@ passed while creating the
+worker and can be reused to invoke further tasks on the same worker or for deleting the worker.
 
 Important thing to be kept in mind is, when you are creating a worker using above approach, you
 must use a unique @job_key@ while starting the worker. Also, while invoking any of the other methods
 like @ask_status@, @worker_info@ or one of the worker methods, you must use @job_key@.
+
+Also another complicated example of starting a worker will be:
+
+<pre class="multiline">MiddleMan.new_worker(:worker => :error_worker, :job_key => :hello_world,\
+     :data => "wow_man",:schedule => \
+     { :hello_world => { :trigger_args => "*/5 * * * * * *",\
+     :data => "hello_world" }}) </pre>
+
+Above code will start @error_worker@ with @job_key@ and will pass argument @:data@ to @create@
+method of the worker. Worker will be scheduled to run @hello_world@ method every 5 seconds with argument 
+specified in @:data@.
+
+p(sub-title). Worker Statistics:
+
+You can get worker specific information using:
+
+<pre class="boxed">MiddleMan.worker(:foo_worker).worker_info </pre>
+
+The return value will look something like:
+
+<pre class="boxed">{:worker=>:foo_worker, :status=>:running, :job_key=>"hello"} </pre>
+
+Information about all currently running workers can be obtained using:
+
+<pre class="boxed">MiddleMan.all_worker_info </pre>
+
+Return value will look like:
+<pre class="multiline">[{:worker=>:foo_worker, :status=>:running, :job_key=>"hello"}, \
+     {:worker=>:foo_worker, :status=>:running, :job_key=>""}] </pre>
+
 
 
 </div>

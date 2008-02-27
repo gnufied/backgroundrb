@@ -78,13 +78,17 @@ be invoked asychrounously and Rails won&#8217;t wait for result from BackgrounDR
 
 
 <pre class="multiline">worker = MiddleMan.worker(:foo_worker)
-worker.some_task(data,false) </pre>
+worker.some_task(data) </pre>
+
+	<p>Here, I would like to illustrate  a point that contrary to general percenption, since <code>some_task</code> method is being
+executed asyhcrounously, don&#8217;t expect any meaningful return values from second line.</p>
+
 
 	<p>When you invoke <code>MiddleMan.worker(:foo_worker)</code> it returns a worker proxy, hence you can combine above two lines in
 one as follows:</p>
 
 
-<pre class="boxed">MiddleMan.worker(:foo_worker,&lt;optional_job_key&gt;).some_task(data,false) </pre>
+<pre class="boxed">MiddleMan.worker(:foo_worker,&lt;optional_job_key&gt;).some_task(data) </pre>
 
 	<p>Above snippet also demonstrates that, if your worker was started with a <code>job_key</code> you can use it to
 get correct proper worker proxy.</p>
@@ -98,9 +102,11 @@ until BackgrounDRb server returns a result.</p>
 
 
 <pre class="multiline">worker = MiddleMan.worker(:foo_worker)
-result = worker.some_task(data,false) </pre>
+result = worker.some_task(data,true) </pre>
 
-	<p>As illustrated above, you can use <code>job_key</code> or make them in single line too.</p>
+	<p>As illustrated above, you can use <code>job_key</code> or make them in single line too. When you are invoking a method
+on your worker first optional argument will be passed to your worker method and second optional argument <code>true|false</code>
+indicates whether we should wait for result from <em>BackgrounDRb</em> server or not.</p>
 
 
 	<p class="sub-title">Fetch Status/Result Objects of a worker :</p>
@@ -121,12 +127,52 @@ rails using:</p>
 	<p>To start a worker from rails:</p>
 
 
-<pre class="boxed">MiddleMan.new_worker(:foo_worker,"my_secret_job_key") </pre>
+<pre class="multiline">used_job_key = MiddleMan.new_worker(:worker =&gt; :foo_worker,\
+     :job_key =&gt; "my_secret_job_key") </pre>
+
+	<p><code>new_worker</code> will always return <code>job_key</code> generated for the worker. It will be same as <code>job_key</code> passed while creating the
+worker and can be reused to invoke further tasks on the same worker or for deleting the worker.</p>
+
 
 	<p>Important thing to be kept in mind is, when you are creating a worker using above approach, you
 must use a unique <code>job_key</code> while starting the worker. Also, while invoking any of the other methods
 like <code>ask_status</code>, <code>worker_info</code> or one of the worker methods, you must use <code>job_key</code>.</p>
 
+
+	<p>Also another complicated example of starting a worker will be:</p>
+
+
+<pre class="multiline">MiddleMan.new_worker(:worker =&gt; :error_worker, :job_key =&gt; :hello_world,\
+     :data =&gt; "wow_man",:schedule =&gt; \
+     { :hello_world =&gt; { :trigger_args =&gt; "*/5 * * * * * *",\
+     :data =&gt; "hello_world" }}) </pre>
+
+	<p>Above code will start <code>error_worker</code> with <code>job_key</code> and will pass argument <code>:data</code> to <code>create</code>
+method of the worker. Worker will be scheduled to run <code>hello_world</code> method every 5 seconds with argument 
+specified in <code>:data</code>.</p>
+
+
+	<p class="sub-title">Worker Statistics:</p>
+
+
+	<p>You can get worker specific information using:</p>
+
+
+<pre class="boxed">MiddleMan.worker(:foo_worker).worker_info </pre>
+
+	<p>The return value will look something like:</p>
+
+
+<pre class="boxed">{:worker=&gt;:foo_worker, :status=&gt;:running, :job_key=&gt;"hello"} </pre>
+
+	<p>Information about all currently running workers can be obtained using:</p>
+
+
+<pre class="boxed">MiddleMan.all_worker_info </pre>
+
+Return value will look like:
+<pre class="multiline">[{:worker=&gt;:foo_worker, :status=&gt;:running, :job_key=&gt;"hello"}, \
+     {:worker=&gt;:foo_worker, :status=&gt;:running, :job_key=&gt;""}] </pre>
 
 </div>
 

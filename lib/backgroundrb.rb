@@ -22,6 +22,10 @@ class BackgrounDRb::WorkerProxy
     @mutex = Mutex.new
     establish_connection
   end
+  
+  def worker(worker_name,job_key = nil)
+    BackgrounDRb::RailsWorkerProxy.worker(worker_name,job_key)
+  end
 
   def establish_connection
     begin
@@ -71,6 +75,7 @@ class BackgrounDRb::WorkerProxy
   end
   
   def dump_object data
+    p data
     unless @connection_status
       establish_connection
       raise BackgrounDRb::BdrbConnError.new("Error while connecting to the backgroundrb server") unless @connection_status

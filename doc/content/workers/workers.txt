@@ -2,6 +2,34 @@
 
 %(entry-title)<a name="introduction"> Introduction </a>%     
 
-Workers are your building blocks of Asynchronous Task Processing.
+Workers are your building blocks of Asynchronous Task Processing. An empty auto generated worker looks like this:
+
+<pre class="multiline">class BillingWorker < BackgrounDRb::MetaWorker
+  set_worker_name :billing_worker
+  def create(args = nil)
+    # method gets called, when new instance of worker is created.                      
+   end
+  end </pre>
+
+@set_worker_name@ will set the worker name which can be later used while invoking tasks on the worker.
+@create@ method gets called when worker is loaded for the first time. If you are starting your worker 
+from rails, you can pass arguments to @create@ method using:
+
+<pre class="multiline">MiddleMan.new_worker(:worker => :billing_worker,\
+     :job_key => user_session,:data => current_user.id) </pre>
+
+p(sub-title). Using Workers
+
+You can invoke random tasks on workers from rails or you can schedule them using config file. Look into
+"Scheduling":/scheduling/index.html section for scheduling and "Rails Integration":/rails/index.html section
+for invoking worker tasks from rails.
+
+p(sub-title). Inbuilt instance methods available in your workers:
+
+*(content_list) @register_status@ : Can be used to store random results from worker which can be later retrieved from rails. For example:
+  <pre class="boxed"> register_status("Hello") </pre>
+* @add_timer@
+* @add_periodic_timer@
+* @thread_pool@
 
 </div>
