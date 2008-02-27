@@ -151,7 +151,7 @@ module BackgrounDRb
   end
 
   class MasterProxy
-    attr_accessor :config_file
+    attr_accessor :config_file,:reloadable_workers
     def initialize
       raise "Running old Ruby version, upgrade to Ruby >= 1.8.5" unless check_for_ruby_version
       @config_file = BackgrounDRb::Config.read_config("#{RAILS_HOME}/config/backgroundrb.yml")
@@ -171,9 +171,9 @@ module BackgrounDRb
     def find_reloadable_worker
       t_workers = Dir["#{WORKER_ROOT}/**/*.rb"]
       @reloadable_workers = t_workers.map do |x|
-        worker_name = File.basename(b_worker,".rb")
+        worker_name = File.basename(x,".rb")
         require worker_name
-        worker_klass = Object.const_get(packet_classify(worker_name))
+        worker_klass = Object.const_get(worker_name.classify)
         worker_klass.reload_flag ? worker_klass : nil
       end.compact
       @worker_triggers = { }

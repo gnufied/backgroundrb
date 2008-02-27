@@ -1,11 +1,7 @@
 require File.join(File.dirname(__FILE__) + "/bdrb_test_helper")
-require "master_worker"
+
 
 context "Master Worker in general should" do
-  setup do
-    master_worker = BackgrounDRb::MasterWorker.new
-  end
-
   specify "read data according to binary protocol and recreate objects" do
 
   end
@@ -53,9 +49,18 @@ context "Master Worker in general should" do
   end
 end
 
-context "Master worker for reloadable workers" do 
+context "Master proxy for reloadable workers" do 
+  BackgrounDRb::Config::RAILS_ENV = "production"
+  CONFIG_FILE = { :backgroundrb => { :port => 11006,:ip => 'localhost',:environment => 'production'}}
+  
+  setup do 
+    Packet::Reactor.stubs(:run)
+    @master_proxy = BackgrounDRb::MasterProxy.new
+  end
+  
   specify "should load schedule of workers which are reloadable" do
-    
+    @master_proxy.find_reloadable_worker
+    p @master_proxy.reloadable_workers
   end
   
   specify "should invoke worker methods which are ready to run" do
