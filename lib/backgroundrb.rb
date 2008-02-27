@@ -3,8 +3,9 @@
 require "pathname"
 require "packet" 
 BACKGROUNDRB_ROOT = Pathname.new(RAILS_ROOT).realpath.to_s
-require "bdrb_conn_error"
-require "bdrb_config"
+require "backgroundrb/bdrb_conn_error"
+require "backgroundrb/bdrb_config"
+require "backgroundrb/rails_worker_proxy" 
 
 module BackgrounDRb
 end

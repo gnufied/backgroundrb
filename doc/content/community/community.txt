@@ -1,1 +1,9 @@
-Hi, I'm a new page!
+<div id="content">
+
+%(entry-title)<a name="mailing_list"> Mailing List </a>%
+
+You can join BackgrounDRb mailing list "here":http://rubyforge.org/mailman/listinfo/backgroundrb-devel .
+Its a perfect place for discussing new ideas, asking questions, submitting patches and stuff.
+
+</div>
+

@@ -2,3 +2,4 @@
 filters_pre: "textile"
 # Custom
 title: "Join the BackgrounDRb Community"
+sidebar_items: [["MailingList", "#mailing_list"]]

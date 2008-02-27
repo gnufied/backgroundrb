@@ -5,7 +5,7 @@ RAILS_HOME = rails_root
 PACKET_APP = rails_root + "/vendor/plugins/backgroundrb"
 WORKER_ROOT = rails_root + "/lib/workers"
 
-["server","server/lib","lib"].each { |x| $LOAD_PATH.unshift(PACKET_APP + "/#{x}")}
+["server","server/lib","lib","lib/backgroundrb"].each { |x| $LOAD_PATH.unshift(PACKET_APP + "/#{x}")}
 $LOAD_PATH.unshift(WORKER_ROOT)
 
 require RAILS_HOME + '/config/boot.rb'

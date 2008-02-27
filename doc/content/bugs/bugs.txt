@@ -1,1 +1,12 @@
-Hi, I'm a new page!
+<div id="content">
+
+%(entry-title)<a name="trac">Submit Bug Report or Patch </a>%
+
+_BackgrounDRb_ causing trouble, or you have a potential fix? Why not submit the bug report "here":http://backgroundrb.devjavu.com/report/ .
+You can also submit potential patches that fix known bugs or add exciting features to the above trac url.
+
+Also, if you are using older version of _BackgrounDRb_ and having a problem, why not upgrade to latest code from git, your bug 
+might have been fixed there.
+
+</div>
+
