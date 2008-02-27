@@ -49,7 +49,7 @@
 
 	<div id="content">
 
-	<p><span class="entry-title"><a name="introduction"> Introduction </a></span></p>
+	<p><span class="entry-title"><a name="introduction"> Workers </a></span></p>
 
 
 	<p>Workers are your building blocks of Asynchronous Task Processing. An empty auto generated worker looks like this:</p>
@@ -83,11 +83,44 @@ for invoking worker tasks from rails.</p>
 
 	<ul class="content_list">
 	<li><code>register_status</code> : Can be used to store random results from worker which can be later retrieved from rails. For example:
-  <pre class="boxed"> register_status("Hello") </pre></li>
-		<li><code>add_timer</code></li>
-		<li><code>add_periodic_timer</code></li>
-		<li><code>thread_pool</code></li>
+  <pre class="boxed"> register_status(:order_processing =&gt; 60) </pre></li>
+		<li><code>add_timer</code> : Look in scheduler section</li>
+		<li><code>add_periodic_timer</code> : Look in scheduler section</li>
+		<li><code>thread_pool</code> : Look below</li>
+		<li><code>connect</code>: Look in <a href="/advanced/index.html">Advanced</a> section. Used to connect to external <span class="caps">TCP</span>/IP servers.</li>
+		<li><code>start_server</code>: Look in <a href="/advanced/index.html">Advanced</a> section. Used to start <span class="caps">TCP</span>/IP server from worker.</li>
+		<li><code>send_data</code>: Can be used to send objects to master process. You can ignore this method.</li>
 	</ul>
+
+
+	<p class="sub-title">Options via class methods :</p>
+
+
+	<p>Following class methods are available for further tuning of workers:</p>
+
+
+	<ul class="content_list">
+	<li><code>pool_size</code> : Can be used to control thread pool size.</li>
+		<li><code>set_no_auto_load</code> : Can be used to disable auto loading of workers when <em>BackgrounDRb</em> starts.</li>
+		<li><code>reload_on_schedule</code> : Can be used to enable reloading of worker at scheduled execution time.</li>
+		<li><code>set_worker_name</code> : Can be used to set worker name.</li>
+	</ul>
+
+
+	<p>Following snippet demonstrates their usages:</p>
+
+
+<pre class="multiline">class HelloWorker &lt; BackgrounDRb::MetaWorker
+  set_worker_name :hello_worker
+  reload_on_schedule true
+  pool_size 10
+end</pre>
+
+	<p>When <code>reload_on_schedule</code> is true, worker won&#8217;t be loaded while <em>BackgrounDRb</em> starts and hence you don&#8217;t need
+<code>set_no_auto_load</code> option there.</p>
+
+
+	<p class="sub-title">Using Thread Pool</p>
 
 
 </div>

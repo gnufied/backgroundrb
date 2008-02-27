@@ -1,6 +1,6 @@
 <div id="content">
 
-%(entry-title)<a name="introduction"> Introduction </a>%     
+%(entry-title)<a name="introduction"> Workers </a>%     
 
 Workers are your building blocks of Asynchronous Task Processing. An empty auto generated worker looks like this:
 
@@ -27,9 +27,36 @@ for invoking worker tasks from rails.
 p(sub-title). Inbuilt instance methods available in your workers:
 
 *(content_list) @register_status@ : Can be used to store random results from worker which can be later retrieved from rails. For example:
-  <pre class="boxed"> register_status("Hello") </pre>
-* @add_timer@
-* @add_periodic_timer@
-* @thread_pool@
+  <pre class="boxed"> register_status(:order_processing => 60) </pre>
+* @add_timer@ : Look in scheduler section
+* @add_periodic_timer@ : Look in scheduler section
+* @thread_pool@ : Look below
+* @connect@: Look in "Advanced":/advanced/index.html section. Used to connect to external TCP/IP servers.
+* @start_server@: Look in "Advanced":/advanced/index.html section. Used to start TCP/IP server from worker.
+* @send_data@: Can be used to send objects to master process. You can ignore this method.
+
+p(sub-title). Options via class methods :
+
+Following class methods are available for further tuning of workers:
+
+*(content_list) @pool_size@ : Can be used to control thread pool size.
+* @set_no_auto_load@ : Can be used to disable auto loading of workers when _BackgrounDRb_ starts.
+* @reload_on_schedule@ : Can be used to enable reloading of worker at scheduled execution time.
+* @set_worker_name@ : Can be used to set worker name.
+
+Following snippet demonstrates their usages:
+
+<pre class="multiline">class HelloWorker < BackgrounDRb::MetaWorker
+  set_worker_name :hello_worker
+  reload_on_schedule true
+  pool_size 10
+end</pre>
+
+When @reload_on_schedule@ is true, worker won't be loaded while _BackgrounDRb_ starts and hence you don't need
+@set_no_auto_load@ option there.
+
+p(sub-title). Using Thread Pool
+
+
 
 </div>
