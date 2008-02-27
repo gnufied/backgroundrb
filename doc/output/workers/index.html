@@ -59,8 +59,8 @@
   set_worker_name :billing_worker
   def create(args = nil)
     # method gets called, when new instance of worker is created.                      
-   end
-  end </pre>
+  end
+end </pre>
 
 	<p><code>set_worker_name</code> will set the worker name which can be later used while invoking tasks on the worker.
 <code>create</code> method gets called when worker is loaded for the first time. If you are starting your worker 
@@ -100,10 +100,10 @@ for invoking worker tasks from rails.</p>
 
 
 	<ul class="content_list">
-	<li><code>pool_size</code> : Can be used to control thread pool size.</li>
-		<li><code>set_no_auto_load</code> : Can be used to disable auto loading of workers when <em>BackgrounDRb</em> starts.</li>
-		<li><code>reload_on_schedule</code> : Can be used to enable reloading of worker at scheduled execution time.</li>
-		<li><code>set_worker_name</code> : Can be used to set worker name.</li>
+	<li><code>pool_size</code> : Can be used to control thread pool size. Accepts pool size as integer value.</li>
+		<li><code>set_no_auto_load</code> : Can be used to disable auto loading of workers when <em>BackgrounDRb</em> starts. Accepts true or false.</li>
+		<li><code>reload_on_schedule</code> : Can be used to enable reloading of worker at scheduled execution time. Accepts true or false.</li>
+		<li><code>set_worker_name</code> : Can be used to set worker name. Accepts symbol as worker name.</li>
 	</ul>
 
 

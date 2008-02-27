@@ -140,6 +140,16 @@ For example to invoke @charge_customer@ method one can use:
 
 Above code can be also executed from Rails console.
 
+p(sub-title). Start the BackgrounDRb server :
+
+You can use:
+
+<pre class="boxed"> ./script/backgroundrb start </pre>
+
+For more options:
+
+<pre class="boxeD"> ./script/backgroundrb --help </pre>
+
 </div>
 
 
