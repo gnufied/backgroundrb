@@ -10,16 +10,8 @@ module BackgrounDRb
     
     def method_missing(method_id,*args)
       worker_method = method_id
-      p worker_method
-      
       data = args[0]
-      
-      p data
-      
       flag = args[1]
-      
-      p flag
-      
       case worker_method
       when :ask_status
         MiddleMan.ask_status(compact(:worker => worker_name,:job_key => job_key))
