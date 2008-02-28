@@ -37,7 +37,6 @@ Rake::RDocTask.new(:rdoc) do |rdoc|
   rdoc.rdoc_files.include('README')
   rdoc.rdoc_files.include('LICENSE')
   rdoc.rdoc_files.include('lib/*.rb')
-  rdoc.rdoc_files.include('framework/*.rb')
   rdoc.rdoc_files.include('server/*.rb')
   rdoc.template = 'jamis'
 end
