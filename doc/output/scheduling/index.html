@@ -92,7 +92,8 @@ from <code>backgroundrb.yml</code> file. A sample configuration looks like:</p>
 
 	<p>Above scheduler option schedules method <code>foobar</code> defined inside <code>foo_worker</code> to start
 executing by 5 seconds delay and stop after 10 minutes. Method should periodically execute
-every 1 minute between that time period.</p>
+every 1 minute between that time period. <strong>Never in any scheduling option, you can schedule <code>create</code>
+method</strong></p>
 
 
 	<p><span class="entry-title"><a name="cron_scheduling"> Cron Scheduling </a></span></p>

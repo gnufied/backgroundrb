@@ -148,7 +148,7 @@ You can use:
 
 For more options:
 
-<pre class="boxeD"> ./script/backgroundrb --help </pre>
+<pre class="boxed"> ./script/backgroundrb --help </pre>
 
 </div>
 
