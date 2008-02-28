@@ -1,2 +1,10 @@
 rdoc
-doc/output
+doc/output/advanced
+doc/output/bugs
+doc/output/community
+doc/output/manual
+doc/output/rails
+doc/output/scheduling
+doc/output/workers
+doc/output/index.html
+
