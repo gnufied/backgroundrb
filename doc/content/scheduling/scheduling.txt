@@ -38,8 +38,8 @@ from @backgroundrb.yml@ file. A sample configuration looks like:
 
 Above scheduler option schedules method @foobar@ defined inside @foo_worker@ to start
 executing by 5 seconds delay and stop after 10 minutes. Method should periodically execute
-every 1 minute between that time period. *Never in any scheduling option, you can schedule @create@
-method*
+every 1 minute between that time period. *Never in any scheduling option, you should schedule @create@
+method/task*
 
 %(entry-title)<a name="cron_scheduling"> Cron Scheduling </a>%
 

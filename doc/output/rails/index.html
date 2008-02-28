@@ -121,6 +121,15 @@ rails using:</p>
 	<p>You can as usual use <code>job_key</code> if <strong>worker was started with a job_key</strong>.</p>
 
 
+	<p>You can query status/result objects of all workers in one shot. For example, in your controller:</p>
+
+
+<pre class="multiline"> def ask_status
+  t_response = MiddleMan.query_all_workers
+  running_workers = t_response.map { |key,value| "#{key} = #{value}"}.join(',')
+  render :text =&gt; running_workers
+end</pre>
+
 	<p class="sub-title">Start a Worker :</p>
 
 

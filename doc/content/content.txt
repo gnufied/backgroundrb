@@ -144,11 +144,15 @@ p(sub-title). Start the BackgrounDRb server :
 
 You can use:
 
-<pre class="boxed"> ./script/backgroundrb start </pre>
+<pre class="boxed">./script/backgroundrb start </pre>
 
 For more options:
 
-<pre class="boxed"> ./script/backgroundrb --help </pre>
+<pre class="boxed">./script/backgroundrb --help </pre>
+
+As documented above, you can use @backgroundrb.yml@ file to load different rails environments, however you can use:
+
+<pre class="boxed">./script/backgroundrb -e development </pre>
 
 </div>
 

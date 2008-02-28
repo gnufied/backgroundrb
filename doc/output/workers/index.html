@@ -123,6 +123,72 @@ end</pre>
 	<p class="sub-title">Using Thread Pool</p>
 
 
+	<p>Remember <em>BackgrounDRb</em> follows event model of network programming, but sad truth of life is not all networking 
+libraries follow this model and hence they make use of blocking IO and threads. BackgrounDRb allows you to run 
+all such tasks concurrently in threads which are internally managed by BackgrounDRb thread pool.</p>
+
+
+	<p>Each worker has access to object <code>thread_pool</code> which can be used to run task in a thread concurrently.</p>
+
+
+<pre class="boxed">thread_pool.defer(wiki_scrap_url) { |wiki_url| scrap_wikipedia(wiki_url) }</pre>
+
+	<p>So whatever task you specify within <code>scrap_wikipedia</code> is going to run concurrently.</p>
+
+
+	<p><strong><span class="caps">WARNING</span></strong>: You shouldn&#8217;t try to use <code>register_status</code> method from within the block supplied to defer. 
+Because, if you do that, you can get corrupted result hashes. However, if you are confident, 
+you should wrap your status_hash ( or whatever data type, you are going to store as a status ) in a 
+mutex and then use <code>register_status</code> . It would make sure that, only one thread resisters status at a time.</p>
+
+
+	<p class="sub-title">Storing result/status objects</p>
+
+
+	<p>All workers can log their results with master using <code>register_status</code> method. This status can be then
+queried from rails using <code>ask_status</code>. For example:</p>
+
+
+<pre class="multiline">class ProgressWorker &lt; BackgrounDRb::MetaWorker
+  set_worker_name :progress_worker
+  def create
+    @counter = 0
+    add_periodic_timer(2) { increment_counter }
+  end
+  def increment_counter
+    @counter += 1
+    register_status(@counter)
+  end
+end</pre>
+
+	<p>And using <code>MiddleMan</code> proxy, you can keep querying the status of progress bar :</p>
+
+
+<pre class="boxed">MiddleMan.worker(:progress_worker).ask_status</pre>
+
+	<p><span class="entry-title"><a href="testing">Testing Workers </a></span></p>
+
+
+	<p><em>BackgrounDRb</em> comes with a baked in mechanism to write test cases. First make sure that you 
+have bdrb_test_helper.rb in the test directory of your rails app (run <code>rake backgroundrb:setup</code>, if you dont have one).</p>
+
+
+	<p>Just put your worker test cases in test/unit directory of your rails application and require the helper. Now, you should be good to go.</p>
+
+
+<pre class="multiline">require File.join(File.dirname(__FILE__) + "/../bdrb_test_helper")
+require "god_worker" 
+ context "When god worker starts" do
+  setup do
+    god_worker = GodWorker.new
+  end
+end </pre>
+
+	<p>All above helper file does is that it stubs out, relevant worker methods, which really need network IO. 
+There can be methods added, which aren&#8217;t stubbed, for all such methods you are encouraged to stub them and send 
+the patch to the backgroundrb mailing list.</p>
+
+
 </div>
 
       <div id="footer">
