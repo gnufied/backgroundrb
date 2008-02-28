@@ -14,7 +14,6 @@ I am eternally grateful to following people ( in no particular order ):
 * "Jason LaPier":http://offtheline.net : for initial testing and bug reports.
 * Kevin Russell : For Letting me work on his Mac machine all day and night and helping out with Mac OSX issues.
 * Richard Stallman: For giving us free software and Emacs.
-* Kiran : For reasons she only understands.
 
 
 %(entry-title)<a name="mailing_list"> Mailing List </a>%
