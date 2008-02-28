@@ -17,6 +17,9 @@ started by installing these two gems:
 
 <pre class="boxed">sudo gem install chronic packet </pre>
 
+Please note that, this version of _BackgrounDRb_ needs packet version 0.1.5 or greater, so make
+sure you have that. 
+
 p(sub-title). Getting the code from Subversion :
 
 <pre class="boxed"> svn co http://svn.devjavu.com/backgroundrb/trunk </pre>
