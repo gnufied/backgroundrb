@@ -17,6 +17,8 @@ class BackgrounDRb::Config
       opts.on("-h", "--help",
               "Show this help message.") { $stderr.puts opts; exit }
       opts.separator ""
+      opts.on("-v","--version",
+              "Show version.") { $stderr.puts "1.0.3"; exit }
     end.parse!
 
     ENV["RAILS_ENV"] = options[:environment]

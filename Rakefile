@@ -50,7 +50,7 @@ module Rake
       super(
             "#{user}@rubyforge.org",
             "/var/www/gforge-projects/backgroundrb",
-            "rdoc")
+            "doc/output")
     end
   end
 end
