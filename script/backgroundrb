@@ -8,13 +8,14 @@ WORKER_ROOT = rails_root + "/lib/workers"
 ["server","server/lib","lib","lib/backgroundrb"].each { |x| $LOAD_PATH.unshift(PACKET_APP + "/#{x}")}
 $LOAD_PATH.unshift(WORKER_ROOT)
 
+require RAILS_HOME + '/config/boot.rb'
+
 # parse CLI options and set RAILS_ENV before loading RoR environment
 require "bdrb_config.rb"
 BackgrounDRb::Config.parse_cmd_options
 
 require RAILS_HOME + '/config/environment'
-#require RAILS_HOME + '/config/boot.rb'
-require "rubygems" 
+require "rubygems"
 require "yaml"
 require "erb"
 require "logger"

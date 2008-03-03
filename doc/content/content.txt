@@ -47,8 +47,9 @@ p(sub-title). Installation using Piston
 %(entry-title)<a name="configuration"> Configuration </a>%
 
 After getting the plugin, you must configure it for use. _BackgrounDRb_ comes with a rake task
-for automating plugin configuration. Run, following command from root directory of your rails
-application, after installation:
+for automating plugin configuration. Before running rake task, remove if any old 'backgroundrb'
+script is there in script folder of your rails app after that run, following command from
+root directory of your rails application, after installation:
 
 <pre class="boxed">rake backgroundrb:setup </pre>
 
@@ -86,10 +87,12 @@ Following file demonstrates other available configuration options:
   :ip: localhost # host to listen
   :environment: production # rails environment to load
   :log: foreground # foreground mode,print log messages on console
-  :lazy_load: true # do not load models eagerly
-  :debug_log: false # disable log workers and other logging </pre>
+  :lazy_load: false # load models eagerly
+  :debug_log: false # disable log workers and other logging
+:schedules: # optional task scheduling
+  : # look in scheduling section </pre>
 
-@lazy_load@ option should be true if you want to pass @ActiveRecord@ model
+@lazy_load@ option should be false if you want to pass @ActiveRecord@ model
 objects around, However, this option is generally not encouraged to use,
 because if your model makes use of some other ActiveRecord plugin and
 plugin is not available during load, loading of model will fail. In
