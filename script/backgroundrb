@@ -9,16 +9,19 @@ WORKER_ROOT = rails_root + "/lib/workers"
 $LOAD_PATH.unshift(WORKER_ROOT)
 
 require RAILS_HOME + '/config/boot.rb'
-require "active_support"
-require "active_record"
+
+# parse CLI options and set RAILS_ENV before loading RoR environment
+require "bdrb_config.rb"
+BackgrounDRb::Config.parse_cmd_options
+
+require RAILS_HOME + '/config/environment'
+require "rubygems"
 require "yaml"
 require "erb"
 require "logger"
 require "packet"
 require "backgroundrb_server"
-require "bdrb_config.rb"
 
-BackgrounDRb::Config.parse_cmd_options
 CONFIG_FILE = BackgrounDRb::Config.read_config("#{RAILS_HOME}/config/backgroundrb.yml")
 pid_file = "#{RAILS_HOME}/tmp/pids/backgroundrb_#{CONFIG_FILE[:backgroundrb][:port]}.pid"
 SERVER_LOGGER = "#{RAILS_HOME}/log/backgroundrb_server_#{CONFIG_FILE[:backgroundrb][:port]}.log"
