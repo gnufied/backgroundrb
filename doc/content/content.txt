@@ -96,6 +96,29 @@ plugin is not available during load, loading of model will fail. In
 new version of BackgrounDRb its generally discouraged to pass model objects around,
 since they are harder to serialize and deserialize.
 
+It is possible to set options depending on the environment:
+
+<pre class="multiline">
+:backgroundrb:
+  :ip: 0.0.0.0
+
+:development:
+  :backgroundrb:
+    :port: 11111     # use port 11111
+    :log: foreground # foreground mode,print log messages on console
+
+:production:
+  :backgroundrb:
+    :port: 22222      # use port 22222
+    :lazy_load: true  # do not load models eagerly
+    :debug_log: false # disable log workers and other logging </pre>
+
+This will cause @script/backgroundrb@ to use port 11111 and to log to foreground under
+development environment and @script/backgroundrb -e production@ to use port 22222,
+lazy_load and no debug_log under production environment. The ip 0.0.0.0 is used in all
+environments.
+
+
 %(entry-title)<a name="worker"> Workers </a>%
 
 Once you are set with initial configuration, you can proceed to create worker and start
