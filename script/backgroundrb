@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-rails_root = File.expand_path(File.join(File.dirname(__FILE__)+".."))
+rails_root = File.expand_path(File.join(File.dirname(__FILE__)+"/.."))
 RAILS_HOME = rails_root
 PACKET_APP = rails_root + "/vendor/plugins/backgroundrb"
 WORKER_ROOT = rails_root + "/lib/workers"
@@ -9,7 +9,7 @@ WORKER_ROOT = rails_root + "/lib/workers"
 $LOAD_PATH.unshift(WORKER_ROOT)
 
 require RAILS_HOME + '/config/boot.rb'
-require "rubygems" 
+require "rubygems"
 require "yaml"
 require "erb"
 require "logger"
