@@ -155,14 +155,14 @@ module BackgrounDRb
     def initialize
       raise "Running old Ruby version, upgrade to Ruby >= 1.8.5" unless check_for_ruby_version
       @config_file = BackgrounDRb::Config.read_config("#{RAILS_HOME}/config/backgroundrb.yml")
-      
+
       log_flag = CONFIG_FILE[:backgroundrb][:debug_log].nil? ? true : CONFIG_FILE[:backgroundrb][:debug_log]
       debug_logger = DebugMaster.new(CONFIG_FILE[:backgroundrb][:log],log_flag)
 
       load_rails_env
-      
+
       find_reloadable_worker
-      
+
       Packet::Reactor.run do |t_reactor|
         @reactor = t_reactor
         enable_memcache_result_hash(t_reactor) if CONFIG_FILE[:backgroundrb][:result_storage] && CONFIG_FILE[:backgroundrb][:result_storage][:memcache]
@@ -171,13 +171,13 @@ module BackgrounDRb
         t_reactor.next_turn { reload_workers }
       end
     end
-    
+
     def gen_worker_key(worker_name,job_key = nil)
       return worker_name if job_key.nil?
       return "#{worker_name}_#{job_key}".to_sym
     end
 
-    
+
     # method should find reloadable workers and load their schedule from config file
     def find_reloadable_worker
       t_workers = Dir["#{WORKER_ROOT}/**/*.rb"]
@@ -195,11 +195,11 @@ module BackgrounDRb
         end
       end
     end
-    
+
     def load_reloadable_schedule(t_worker)
       worker_method_triggers = { }
       worker_schedule = CONFIG_FILE[:schedules][t_worker.worker_name.to_sym]
-      
+
       worker_schedule && worker_schedule.each do |key,value|
         case value[:trigger_args]
         when String
@@ -219,7 +219,7 @@ module BackgrounDRb
       worker_triggers.each do |key,value|
         value.delete_if { |key,value| value[:trigger].respond_to?(:end_time) && value[:trigger].end_time <= Time.now }
       end
-      
+
       worker_triggers.each do |worker_name,trigger|
         trigger.each do |key,value|
           time_now = Time.now.to_i
@@ -231,7 +231,7 @@ module BackgrounDRb
         end
       end
     end
-    
+
     # method will load the worker and invoke worker method
     def load_and_invoke(worker_name,p_method,data)
       begin
@@ -240,19 +240,19 @@ module BackgrounDRb
         @reactor.start_worker(:worker => worker_name,:job_key => job_key)
         worker_name_key = gen_worker_key(worker_name,job_key)
         data_request = {:data => { :worker_method => p_method,:data => data[:data]},
-          :type => :request, :result => false 
+          :type => :request, :result => false
         }
-    
+
         exit_request = {:data => { :worker_method => :exit},
-          :type => :request, :result => false 
+          :type => :request, :result => false
         }
-    
+
         @reactor.live_workers[worker_name_key].send_request(data_request)
         @reactor.live_workers[worker_name_key].send_request(exit_request)
       rescue LoadError
-        puts "no such worker #{worker_name}" 
+        puts "no such worker #{worker_name}"
       rescue MissingSourceFile
-        puts "no such worker #{worker_name}" 
+        puts "no such worker #{worker_name}"
         return
       end
     end
@@ -263,7 +263,9 @@ module BackgrounDRb
       ENV["RAILS_ENV"] = run_env
       RAILS_ENV.replace(run_env) if defined?(RAILS_ENV)
       require RAILS_HOME + '/config/environment.rb'
-      load_rails_models unless CONFIG_FILE[:backgroundrb][:lazy_load]
+      lazy_load = CONFIG_FILE[:backgroundrb][:lazy_load].nil? ? true : CONFIG_FILE[:backgroundrb][:lazy_load].nil?
+      p lazy_load
+      load_rails_models unless lazy_load
       ActiveRecord::Base.allow_concurrency = true
     end
 

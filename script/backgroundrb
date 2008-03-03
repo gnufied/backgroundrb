@@ -9,7 +9,8 @@ WORKER_ROOT = rails_root + "/lib/workers"
 $LOAD_PATH.unshift(WORKER_ROOT)
 
 require RAILS_HOME + '/config/boot.rb'
-require "rubygems"
+require "active_support"
+require "active_record"
 require "yaml"
 require "erb"
 require "logger"

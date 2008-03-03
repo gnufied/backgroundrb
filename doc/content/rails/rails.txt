@@ -15,14 +15,31 @@ which API you are using @MiddleMan@ is the proxy object that lets you handle all
 
 p(sub-title). Invoke an asynchronous task on a worker :
 
+Let's say, you have following worker code:
+
+<pre class="multiline">class FooWorker < BackgrounDRb::MetaWorker
+  set_worker_name :foo_worker
+  def create(args = nil)
+    # this method is called, when worker is loaded for the first time
+  end
+
+  def some_task args
+    # perform a long running task
+  end
+end
+</pre>
+
+And you want to invoke @some_task@ method with appropriate arguments from rails.
 Following snippet will invoke method @some_task@ with argument @data@ in @foo_worker@. Also, method will
 be invoked asychrounously and Rails won't wait for result from BackgrounDRb server.
 
 <pre class="multiline">worker = MiddleMan.worker(:foo_worker)
 worker.some_task(data) </pre>
 
-Here, I would like to illustrate  a point that contrary to general percenption, since @some_task@ method is being
-executed asyhcrounously, don't expect any meaningful return values from second line.
+It should be noted that, since @some_task@ method is being
+executed asyhcrounously, don't expect any meaningful return values from method invocation.
+If you want to invoke a method on worker and collect results returned by it, you
+should read next section (Invoke method and collect results).
 
 When you invoke @MiddleMan.worker(:foo_worker)@ it returns a worker proxy, hence you can combine above two lines in
 one as follows:
@@ -34,11 +51,26 @@ get correct proper worker proxy.
 
 p(sub-title). Invoke a method on worker and get results :
 
-Following snippet will invoke method @some_task@ with argument @data@ in @foo_worker@. Also, method block
+Following snippet will invoke method @some_task@ with argument @data@ in @foo_worker@. Also, method will block
 until BackgrounDRb server returns a result.
 
 <pre class="multiline">worker = MiddleMan.worker(:foo_worker)
 result = worker.some_task(data,true) </pre>
+
+Since, now you are expecting a return value from your worker method, new worker code will look like:
+
+<pre class="multiline">class FooWorker < BackgrounDRb::MetaWorker
+  set_worker_name :foo_worker
+  def create(args = nil)
+    # this method is called, when worker is loaded for the first time
+  end
+
+  def some_task args
+    billing_result = UserPayment.bill!
+    return billing_result
+  end
+end
+</pre>
 
 As illustrated above, you can use @job_key@ or make them in single line too. When you are invoking a method
 on your worker first optional argument will be passed to your worker method and second optional argument @true|false@
@@ -46,16 +78,16 @@ indicates whether we should wait for result from _BackgrounDRb_ server or not.
 
 p(sub-title). Fetch Status/Result Objects of a worker :
 
-If you are using @register_status@ in your worker code to store status/result objects, you can retrieve them from 
+If you are using @register_status@ in your worker code to store status/result objects, you can retrieve them from
 rails using:
 
 <pre class="boxed">status_obj = MiddleMan.worker(:foo_worker).ask_status </pre>
 
-You can as usual use @job_key@ if *worker was started with a job_key*. 
+You can as usual use @job_key@ if *worker was started with a job_key*.
 
 You can query status/result objects of all workers in one shot. For example, in your controller:
 
-<pre class="multiline"> def ask_status
+<pre class="multiline">def ask_status
   t_response = MiddleMan.query_all_workers
   running_workers = t_response.map { |key,value| "#{key} = #{value}"}.join(',')
   render :text => running_workers
@@ -74,7 +106,7 @@ worker and can be reused to invoke further tasks on the same worker or for delet
 
 Important thing to be kept in mind is, when you are creating a worker using above approach, you
 must use a unique @job_key@ while starting the worker. Also, while invoking any of the other methods
-like @ask_status@, @worker_info@ or one of the worker methods, you must use @job_key@.
+like @ask_status@, @worker_info@ or one of the worker methods, you must user same @job_key@.
 
 Also another complicated example of starting a worker will be:
 
@@ -84,7 +116,7 @@ Also another complicated example of starting a worker will be:
      :data => "hello_world" }}) </pre>
 
 Above code will start @error_worker@ with @job_key@ and will pass argument @:data@ to @create@
-method of the worker. Worker will be scheduled to run @hello_world@ method every 5 seconds with argument 
+method of the worker. Worker will be scheduled to run @hello_world@ method every 5 seconds with argument
 specified in @:data@.
 
 p(sub-title). Worker Statistics:

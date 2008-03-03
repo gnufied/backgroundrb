@@ -21,5 +21,16 @@ I am eternally grateful to following people ( in no particular order ):
 You can join BackgrounDRb mailing list "here":http://rubyforge.org/mailman/listinfo/backgroundrb-devel .
 Its a perfect place for discussing new ideas, asking questions, submitting patches and stuff.
 
+%(entry-title)<a name="irc"> IRC Help </a>%
+
+You can also try #backgroundrb on freenode for help.
+
+%(entry-title)<a name="contribute"> Contribute </a>%
+
+Your contributions/feedback is most welcome. We have very simple rule for giving new coders
+commit access. If you submit one patch which is accepted for inclusion in the _BackgrounDRb_
+code repository, you are elligible for commit access. Create an account on "Gitorious":http://gitorious.org/
+and let me (gethemant at gmail dot com) know your login handle.
+
 </div>
 
