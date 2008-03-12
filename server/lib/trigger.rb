@@ -9,7 +9,7 @@ module BackgrounDRb
       @repeat_interval = opts[:repeat_interval].to_i
     end
 
-    def fire_time_after(time)
+    def fire_after_time(time)
       @start_time = time  if not @start_time
 
       # Support UNIX at-style scheduling, by just specifying a start
