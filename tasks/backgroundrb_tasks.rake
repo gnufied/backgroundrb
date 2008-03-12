@@ -7,7 +7,7 @@ namespace :backgroundrb do
 
     FileUtils.chmod 0774, script_src
 
-    defaults = {:backgroundrb => {:ip => 'localhost',:port => 11006 } }
+    defaults = {:backgroundrb => {:ip => '0.0.0.0',:port => 11006 } }
 
     config_dest = "#{RAILS_ROOT}/config/backgroundrb.yml"
 
