@@ -128,7 +128,7 @@ from the 28th second plus the 59th second:
 Note that if you specify an asterisk in the first field (seconds)
 it will trigger every second for the subsequent match.
 
-p(sub-title). Loading Workers on demand
+p(sub-title). Restarting Workers on Scheduled Time
 
 Usually when your worker is scheduled to execute at longer intervals, it
 doesn't make sense to have worker around, when its doing nothing. Since, scheduling
@@ -148,7 +148,7 @@ following syntax to autostart workers on scheduled time:
   end
 end </pre>
 
-In above worker @reload_on_schedule true@ makes sure that your worker is reloaded on
+In above worker @reload_on_schedule true@ makes sure that your worker is restarted on
 scheduled time. This feature is only available in version 1.0.3 onwards.
 
 </div>
