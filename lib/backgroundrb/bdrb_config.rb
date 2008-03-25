@@ -29,6 +29,7 @@ class BackgrounDRb::Config
     config = YAML.load(ERB.new(IO.read(config_file)).result)
 
     environment = RAILS_ENV.to_sym
+    config[:backgroundrb][:environment] = environment.to_s
 
     if config[environment]
 

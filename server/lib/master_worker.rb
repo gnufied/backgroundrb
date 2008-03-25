@@ -258,7 +258,6 @@ module BackgrounDRb
     end
 
     def load_rails_env
-      db_config_file = YAML.load(ERB.new(IO.read("#{RAILS_HOME}/config/database.yml")).result)
       run_env = CONFIG_FILE[:backgroundrb][:environment] || 'development'
       ENV["RAILS_ENV"] = run_env
       RAILS_ENV.replace(run_env) if defined?(RAILS_ENV)
