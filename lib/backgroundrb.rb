@@ -12,9 +12,21 @@ end
 class BackgrounDRb::WorkerProxy
   include Packet::NbioHelper
   def self.init
-    @@config = BackgrounDRb::Config.read_config("#{BACKGROUNDRB_ROOT}/config/backgroundrb.yml")
-    @@server_ip = @@config[:backgroundrb][:ip]
-    @@server_port = @@config[:backgroundrb][:port]
+    @config = BackgrounDRb::Config.read_config("#{BACKGROUNDRB_ROOT}/config/backgroundrb.yml")
+    @server_ip = @config[:backgroundrb][:ip]
+    @server_port = @config[:backgroundrb][:port]
+    new
+  end
+  
+  def self.server_ip; @server_ip; end
+  def self.server_port; @server_port; end
+  
+  def server_ip; self.class.server_ip; end
+  def server_port; self.class.server_port; end
+  
+  def self.custom_connection(ip,port)
+    @server_ip = ip
+    @server_port = port
     new
   end
   
@@ -28,9 +40,10 @@ class BackgrounDRb::WorkerProxy
   end
 
   def establish_connection
+    puts "server ip: #{server_ip} #{server_port}"
     begin
       timeout(3) do
-        @connection = TCPSocket.open(@@server_ip, @@server_port)
+        @connection = TCPSocket.open(server_ip, server_port)
         @connection.setsockopt(Socket::IPPROTO_TCP,Socket::TCP_NODELAY,1)
       end
       @connection_status = true
@@ -75,7 +88,6 @@ class BackgrounDRb::WorkerProxy
   end
   
   def dump_object data
-    p data
     unless @connection_status
       establish_connection
       raise BackgrounDRb::BdrbConnError.new("Error while connecting to the backgroundrb server") unless @connection_status
