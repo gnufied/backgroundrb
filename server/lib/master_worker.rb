@@ -263,7 +263,6 @@ module BackgrounDRb
       RAILS_ENV.replace(run_env) if defined?(RAILS_ENV)
       require RAILS_HOME + '/config/environment.rb'
       lazy_load = CONFIG_FILE[:backgroundrb][:lazy_load].nil? ? true : CONFIG_FILE[:backgroundrb][:lazy_load].nil?
-      p lazy_load
       load_rails_models unless lazy_load
       ActiveRecord::Base.allow_concurrency = true
     end
