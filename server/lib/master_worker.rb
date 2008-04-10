@@ -9,7 +9,7 @@ module BackgrounDRb
       if @log_mode == :foreground
         @logger = ::Logger.new(STDOUT)
       else
-        @logger = ::Logger.new("#{RAILS_HOME}/log/backgroundrb_#{CONFIG_FILE[:backgroundrb][:port]}_debug.log")
+        @logger = ::Logger.new("#{RAILS_HOME}/log/backgroundrb_debug_#{CONFIG_FILE[:backgroundrb][:port]}.log")
       end
     end
 
@@ -138,6 +138,7 @@ module BackgrounDRb
 
     # this method can receive one shot status reports or proper results
     def worker_receive p_data
+      p p_data
       send_object(p_data)
     end
 
@@ -258,10 +259,6 @@ module BackgrounDRb
     end
 
     def load_rails_env
-      run_env = CONFIG_FILE[:backgroundrb][:environment] || 'development'
-      ENV["RAILS_ENV"] = run_env
-      RAILS_ENV.replace(run_env) if defined?(RAILS_ENV)
-      require RAILS_HOME + '/config/environment.rb'
       lazy_load = CONFIG_FILE[:backgroundrb][:lazy_load].nil? ? true : CONFIG_FILE[:backgroundrb][:lazy_load].nil?
       load_rails_models unless lazy_load
       ActiveRecord::Base.allow_concurrency = true

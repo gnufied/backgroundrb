@@ -10,7 +10,7 @@ require "backgroundrb/rails_worker_proxy"
 module BackgrounDRb
 end
 class BackgrounDRb::WorkerProxy
-  include Packet::NbioHelper
+  #include Packet::NbioHelper
   def self.init
     @config = BackgrounDRb::Config.read_config("#{BACKGROUNDRB_ROOT}/config/backgroundrb.yml")
     @server_ip = @config[:backgroundrb][:ip]
@@ -32,7 +32,7 @@ class BackgrounDRb::WorkerProxy
 
   def initialize
     @mutex = Mutex.new
-    establish_connection
+    #establish_connection
   end
 
   def worker(worker_name,job_key = nil)
@@ -40,16 +40,18 @@ class BackgrounDRb::WorkerProxy
   end
 
   def establish_connection
-    puts "server ip: #{server_ip} #{server_port}"
     begin
       timeout(3) do
         @connection = TCPSocket.open(server_ip, server_port)
         @connection.setsockopt(Socket::IPPROTO_TCP,Socket::TCP_NODELAY,1)
       end
       @connection_status = true
+      puts "connection established"
     rescue Timeout::Error
+      puts "error while opening connection"
       @connection_status = false
     rescue Exception => e
+      puts "some other error"
       @connection_status = false
     end
   end
@@ -64,6 +66,7 @@ class BackgrounDRb::WorkerProxy
       if @connection_status
         flush_in_loop(data)
       else
+        @connection_status = false
         raise BackgrounDRb::BdrbConnError.new("Error while writing")
       end
     rescue
@@ -71,6 +74,7 @@ class BackgrounDRb::WorkerProxy
       if @connection_status
         flush_in_loop(data)
       else
+        @connection_status = false
         raise BackgrounDRb::BdrbConnError.new("Error while writing")
       end
     end
@@ -81,17 +85,16 @@ class BackgrounDRb::WorkerProxy
     loop do
       break if t_length <= 0
       written_length = @connection.write(data)
-      @connection.flush
+      raise "Error writing to socket" if written_length <= 0
+      result = @connection.flush
       data = data[written_length..-1]
       t_length = data.length
     end
   end
 
   def dump_object data
-    unless @connection_status
-      establish_connection
-      raise BackgrounDRb::BdrbConnError.new("Error while connecting to the backgroundrb server") unless @connection_status
-    end
+    establish_connection
+    raise BackgrounDRb::BdrbConnError.new("Error while connecting to the backgroundrb server") unless @connection_status
 
     object_dump = Marshal.dump(data)
     dump_length = object_dump.length.to_s
@@ -100,14 +103,20 @@ class BackgrounDRb::WorkerProxy
     @mutex.synchronize { write_data(final_data) }
   end
 
+  def close_connection
+    @connection.close
+  end
+
   def ask_work p_data
     p_data[:type] = :do_work
     dump_object(p_data)
+    close_connection
   end
 
   def new_worker p_data
     p_data[:type] = :start_worker
     dump_object(p_data)
+    close_connection
     p_data[:job_key]
   end
 
@@ -116,6 +125,7 @@ class BackgrounDRb::WorkerProxy
     dump_object(p_data)
     bdrb_response = nil
     @mutex.synchronize { bdrb_response = read_from_bdrb() }
+    close_connection
     bdrb_response
   end
 
@@ -126,12 +136,14 @@ class BackgrounDRb::WorkerProxy
     dump_object(p_data)
     bdrb_response = nil
     @mutex.synchronize { bdrb_response = read_from_bdrb() }
+    close_connection
     bdrb_response
   end
 
   def delete_worker p_data
     p_data[:type] = :delete_worker
     dump_object(p_data)
+    close_connection
   end
 
   def read_object
@@ -151,6 +163,7 @@ class BackgrounDRb::WorkerProxy
     dump_object(p_data)
     bdrb_response = nil
     @mutex.synchronize { bdrb_response = read_from_bdrb() }
+    close_connection
     bdrb_response
   end
 
@@ -159,6 +172,7 @@ class BackgrounDRb::WorkerProxy
     dump_object(p_data)
     bdrb_response = nil
     @mutex.synchronize { bdrb_response = read_from_bdrb() }
+    close_connection
     bdrb_response
   end
 
@@ -180,6 +194,7 @@ class BackgrounDRb::WorkerProxy
     dump_object(p_data)
     bdrb_response = nil
     @mutex.synchronize { bdrb_response = read_from_bdrb(nil) }
+    close_connection
     bdrb_response
   end
 end

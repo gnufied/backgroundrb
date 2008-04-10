@@ -1,7 +1,8 @@
 module BackgrounDRb
   class RailsWorkerProxy
     attr_accessor :worker_name, :worker_method, :data, :job_key,:middle_man
-    def self.worker(p_worker_name,p_job_key = nil,p_middle_man)
+
+    def self.worker(p_worker_name,p_job_key = nil,p_middle_man = nil)
       t = new
       t.worker_name = p_worker_name
       t.middle_man = p_middle_man
