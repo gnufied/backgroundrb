@@ -46,12 +46,9 @@ class BackgrounDRb::WorkerProxy
         @connection.setsockopt(Socket::IPPROTO_TCP,Socket::TCP_NODELAY,1)
       end
       @connection_status = true
-      puts "connection established"
     rescue Timeout::Error
-      puts "error while opening connection"
       @connection_status = false
     rescue Exception => e
-      puts "some other error"
       @connection_status = false
     end
   end

@@ -119,7 +119,7 @@ module BackgrounDRb
   #          set_worker_name :foo_worker
   #          def create(args = nil)
   #            external_connection = nil
-  #            connect("localhost",11009,TimeClient) { |conn| external_connection = conn }
+  #            connect("localhost",11009,TimeClient) { |conn| conn = external_connection }
   #          end
   #
   #          def get_external_data(p_data)
@@ -184,7 +184,7 @@ module BackgrounDRb
     def worker_init
       @config_file = BackgrounDRb::Config.read_config("#{RAILS_HOME}/config/backgroundrb.yml")
       log_flag = @config_file[:backgroundrb][:debug_log].nil? ? true : @config_file[:backgroundrb][:debug_log]
-      
+
       load_rails_env
       @logger = PacketLogger.new(self,log_flag)
       @thread_pool = ThreadPool.new(pool_size || 20,@logger)
