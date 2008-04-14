@@ -34,6 +34,12 @@ namespace :backgroundrb do
       FileUtils.cp_r(test_helper_src,test_helper_dest)
     end
 
+    worker_env_loader_dest = "#{RAILS_ROOT}/script/load_worker_env.rb"
+    worker_env_loader_src = File.join(File.dirname(__FILE__),"..","script","load_worker_env.rb")
+    unless File.exists? worker_env_loader_dest
+      puts "Copying Worker envionment loader file #{worker_env_loader_dest}"
+      FileUtils.cp_r(worker_env_loader_src,worker_env_loader_dest)
+    end
   end
 
   desc 'Remove backgroundrb from your rails application'

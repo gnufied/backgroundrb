@@ -183,9 +183,7 @@ module BackgrounDRb
     # user defined worker class
     def worker_init
       @config_file = BackgrounDRb::Config.read_config("#{RAILS_HOME}/config/backgroundrb.yml")
-      log_flag = @config_file[:backgroundrb][:debug_log].nil? ? true : @config_file[:backgroundrb][:debug_log]
-
-      load_rails_env
+      log_flag = @config_file[:backgroundrb][:debug_log].nil? ? true : @config_file[:backgroundrb][:debug_load_rails_env]
       @logger = PacketLogger.new(self,log_flag)
       @thread_pool = ThreadPool.new(pool_size || 20,@logger)
 
@@ -347,10 +345,12 @@ module BackgrounDRb
 
     private
     def load_rails_env
-      db_config_file = YAML.load(ERB.new(IO.read("#{RAILS_HOME}/config/database.yml")).result)
-      run_env = @config_file[:backgroundrb][:environment] || 'development'
-      ENV["RAILS_ENV"] = run_env
-      RAILS_ENV.replace(run_env) if defined?(RAILS_ENV)
+      #db_config_file = YAML.load(ERB.new(IO.read("#{RAILS_HOME}/config/database.yml")).result)
+      #run_env = @config_file[:backgroundrb][:environment] || 'development'
+      #ENV["RAILS_ENV"] = run_env
+      run_env = ENV["RAILS_ENV"]
+      #require RAILS_HOME + "/config/environment"
+      #RAILS_ENV.replace(run_env) if defined?(RAILS_ENV)
       ActiveRecord::Base.establish_connection(db_config_file[run_env])
       ActiveRecord::Base.allow_concurrency = true
     end

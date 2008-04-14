@@ -174,7 +174,7 @@ class BackgrounDRb::WorkerProxy
   end
 
   def read_from_bdrb(timeout = 3)
-    @tokenizer = BinParser.new
+    @tokenizer = Packet::BinParser.new
     begin
       ret_val = select([@connection],nil,nil,timeout)
       return nil unless ret_val

@@ -146,7 +146,7 @@ module BackgrounDRb
       debug_logger.info("Client disconected")
     end
     def post_init
-      @tokenizer = BinParser.new
+      @tokenizer = Packet::BinParser.new
     end
     def connection_completed; end
   end
@@ -259,23 +259,9 @@ module BackgrounDRb
     end
 
     def load_rails_env
-      lazy_load = CONFIG_FILE[:backgroundrb][:lazy_load].nil? ? true : CONFIG_FILE[:backgroundrb][:lazy_load].nil?
-      load_rails_models unless lazy_load
+      # lazy_load = CONFIG_FILE[:backgroundrb][:lazy_load].nil? ? true : CONFIG_FILE[:backgroundrb][:lazy_load].nil?
+      require RAILS_HOME + "/config/environment"
       ActiveRecord::Base.allow_concurrency = true
-    end
-
-    def load_rails_models
-      model_root = RAILS_HOME + "/app/models"
-      models = Dir["#{model_root}/**/*.rb"]
-      models.each { |x|
-        begin
-          require x
-        rescue LoadError
-          next
-        rescue MissingSourceFile
-          next
-        end
-      }
     end
 
     def enable_memcache_result_hash(t_reactor)
