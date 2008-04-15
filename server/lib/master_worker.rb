@@ -29,17 +29,39 @@ module BackgrounDRb
     def receive_data p_data
       debug_logger.info(p_data)
       @tokenizer.extract(p_data) do |b_data|
-        t_data = Marshal.load(b_data)
+        t_data = load_data b_data
         debug_logger.info(t_data)
-        case t_data[:type]
-        when :do_work: process_work(t_data)
-        when :get_status: process_status(t_data)
-        when :get_result: process_request(t_data)
-        when :start_worker: start_worker_request(t_data)
-        when :delete_worker: delete_drb_worker(t_data)
-        when :all_worker_status: query_all_worker_status(t_data)
-        when :worker_info: pass_worker_info(t_data)
-        when :all_worker_info: all_worker_info(t_data)
+        if t_data
+          case t_data[:type]
+          when :do_work: process_work(t_data)
+          when :get_status: process_status(t_data)
+          when :get_result: process_request(t_data)
+          when :start_worker: start_worker_request(t_data)
+          when :delete_worker: delete_drb_worker(t_data)
+          when :all_worker_status: query_all_worker_status(t_data)
+          when :worker_info: pass_worker_info(t_data)
+          when :all_worker_info: all_worker_info(t_data)
+          end
+        end
+      end
+    end
+
+    def load_data data
+      error_msg = nil
+      begin
+        return Marshal.load(data)
+      rescue
+        error_msg = $!.message
+      end
+
+      if error_msg =~ /^undefined.+([A-Z]\w+)/
+        file_name = $1.underscore
+        begin
+          require file_name
+          return Marshal.load(data)
+        rescue
+          puts "Unable to load #{file_name}"
+          return nil
         end
       end
     end
@@ -138,7 +160,6 @@ module BackgrounDRb
 
     # this method can receive one shot status reports or proper results
     def worker_receive p_data
-      p p_data
       send_object(p_data)
     end
 
@@ -260,7 +281,10 @@ module BackgrounDRb
 
     def load_rails_env
       # lazy_load = CONFIG_FILE[:backgroundrb][:lazy_load].nil? ? true : CONFIG_FILE[:backgroundrb][:lazy_load].nil?
-      require RAILS_HOME + "/config/environment"
+      #       db_config_file = YAML.load(ERB.new(IO.read("#{RAILS_HOME}/config/database.yml")).result)
+      #       run_env = ENV["RAILS_ENV"]
+      #       require RAILS_HOME + "/config/environment"
+      #       ActiveRecord::Base.establish_connection(db_config_file[run_env])
       ActiveRecord::Base.allow_concurrency = true
     end
 

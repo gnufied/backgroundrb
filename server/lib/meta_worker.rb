@@ -208,6 +208,33 @@ module BackgrounDRb
       new_load_schedule if @my_schedule
     end
 
+    def receive_internal_data data
+      @tokenizer.extract(data) do |b_data|
+        data_obj = load_data(b_data)
+        receive_data(data_obj)
+      end
+    end
+
+    def load_data data
+      error_msg = nil
+      begin
+        return Marshal.load(data)
+      rescue
+        error_msg = $!.message
+      end
+      if error_msg =~ /^undefined.+([A-Z]\w+)/
+        file_name = $1.underscore
+        begin
+          require file_name
+          return Marshal.load(data)
+        rescue
+          @logger.info "Unable to load #{file_name}"
+          return nil
+        end
+      end
+    end
+
+
     # receives requests/responses from master process or other workers
     def receive_data p_data
       if p_data[:data][:worker_method] == :exit
@@ -348,10 +375,10 @@ module BackgrounDRb
       #db_config_file = YAML.load(ERB.new(IO.read("#{RAILS_HOME}/config/database.yml")).result)
       #run_env = @config_file[:backgroundrb][:environment] || 'development'
       #ENV["RAILS_ENV"] = run_env
-      run_env = ENV["RAILS_ENV"]
+      #run_env = ENV["RAILS_ENV"]
       #require RAILS_HOME + "/config/environment"
       #RAILS_ENV.replace(run_env) if defined?(RAILS_ENV)
-      ActiveRecord::Base.establish_connection(db_config_file[run_env])
+      #ActiveRecord::Base.establish_connection(db_config_file[run_env])
       ActiveRecord::Base.allow_concurrency = true
     end
 

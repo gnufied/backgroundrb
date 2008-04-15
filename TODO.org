@@ -1,8 +1,7 @@
-* Implement a way to share code between workers.
-* Implement a way to test workers.
-* Implement proper logger stuff so as people can set log level and stuff 
-* Implement a way to disable logger workers.
-* Implement backgroundrb to work across machines.
-* Make the API more simple use to use and less mouthfull.
-
+* Todo related with new version *
+** Implement environment loading more granular.
+   Worker, should be able to specify whether it wants the environment loaded or not.
+** Write test cases for meta worker and master worker classes.
+** Check for missing constant errors while doing Marshal.load and
+   see if it can load scoped classes as well.
 
