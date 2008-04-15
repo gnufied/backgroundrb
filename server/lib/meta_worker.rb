@@ -372,13 +372,13 @@ module BackgrounDRb
 
     private
     def load_rails_env
-      #db_config_file = YAML.load(ERB.new(IO.read("#{RAILS_HOME}/config/database.yml")).result)
+      db_config_file = YAML.load(ERB.new(IO.read("#{RAILS_HOME}/config/database.yml")).result)
       #run_env = @config_file[:backgroundrb][:environment] || 'development'
       #ENV["RAILS_ENV"] = run_env
-      #run_env = ENV["RAILS_ENV"]
+      run_env = ENV["RAILS_ENV"]
       #require RAILS_HOME + "/config/environment"
       #RAILS_ENV.replace(run_env) if defined?(RAILS_ENV)
-      #ActiveRecord::Base.establish_connection(db_config_file[run_env])
+      ActiveRecord::Base.establish_connection(db_config_file[run_env])
       ActiveRecord::Base.allow_concurrency = true
     end
 

@@ -281,10 +281,10 @@ module BackgrounDRb
 
     def load_rails_env
       # lazy_load = CONFIG_FILE[:backgroundrb][:lazy_load].nil? ? true : CONFIG_FILE[:backgroundrb][:lazy_load].nil?
-      #       db_config_file = YAML.load(ERB.new(IO.read("#{RAILS_HOME}/config/database.yml")).result)
-      #       run_env = ENV["RAILS_ENV"]
+      db_config_file = YAML.load(ERB.new(IO.read("#{RAILS_HOME}/config/database.yml")).result)
+      run_env = ENV["RAILS_ENV"]
       #       require RAILS_HOME + "/config/environment"
-      #       ActiveRecord::Base.establish_connection(db_config_file[run_env])
+      ActiveRecord::Base.establish_connection(db_config_file[run_env])
       ActiveRecord::Base.allow_concurrency = true
     end
 
