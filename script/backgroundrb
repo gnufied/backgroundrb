@@ -20,6 +20,7 @@ require "bdrb_config"
 BackgrounDRb::Config.parse_cmd_options ARGV
 CONFIG_FILE = BackgrounDRb::Config.read_config("#{RAILS_HOME}/config/backgroundrb.yml")
 
+require RAILS_HOME + "/config/environment"
 require "backgroundrb_server"
 
 pid_file = "#{RAILS_HOME}/tmp/pids/backgroundrb_#{CONFIG_FILE[:backgroundrb][:port]}.pid"
