@@ -159,6 +159,7 @@ module BackgrounDRb
   #      end
 
   class MetaWorker < Packet::Worker
+    include BackgrounDRb::BdrbServerHelper
     attr_accessor :config_file, :my_schedule, :run_time, :trigger_type, :trigger
     attr_accessor :logger, :thread_pool
     iattr_accessor :pool_size
@@ -211,29 +212,9 @@ module BackgrounDRb
     def receive_internal_data data
       @tokenizer.extract(data) do |b_data|
         data_obj = load_data(b_data)
-        receive_data(data_obj)
+        receive_data(data_obj) if data_obj
       end
     end
-
-    def load_data data
-      error_msg = nil
-      begin
-        return Marshal.load(data)
-      rescue
-        error_msg = $!.message
-      end
-      if error_msg =~ /^undefined.+([A-Z]\w+)/
-        file_name = $1.underscore
-        begin
-          require file_name
-          return Marshal.load(data)
-        rescue
-          @logger.info "Unable to load #{file_name}"
-          return nil
-        end
-      end
-    end
-
 
     # receives requests/responses from master process or other workers
     def receive_data p_data

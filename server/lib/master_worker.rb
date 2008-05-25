@@ -26,11 +26,10 @@ module BackgrounDRb
 
   class MasterWorker
     attr_accessor :debug_logger
+    include BackgrounDRb::BdrbServerHelper
     def receive_data p_data
-      debug_logger.info(p_data)
       @tokenizer.extract(p_data) do |b_data|
         t_data = load_data b_data
-        debug_logger.info(t_data)
         if t_data
           case t_data[:type]
           when :do_work: process_work(t_data)
@@ -42,26 +41,6 @@ module BackgrounDRb
           when :worker_info: pass_worker_info(t_data)
           when :all_worker_info: all_worker_info(t_data)
           end
-        end
-      end
-    end
-
-    def load_data data
-      error_msg = nil
-      begin
-        return Marshal.load(data)
-      rescue
-        error_msg = $!.message
-      end
-
-      if error_msg =~ /^undefined.+([A-Z]\w+)/
-        file_name = $1.underscore
-        begin
-          require file_name
-          return Marshal.load(data)
-        rescue
-          puts "Unable to load #{file_name}"
-          return nil
         end
       end
     end
