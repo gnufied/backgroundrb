@@ -1,0 +1,15 @@
+* Before publishing any release, please make sure that following things are working *
+** Scheduling via cron is working
+** Scheduling via unix scheduler is working
+** creating a worker using job_key is working
+** Creating a worker and its scheduling is working
+** ask_work is working
+** send_request is working
+** all_worker_info is workign
+** status retrieval is working
+** sending of large objects around is working
+** sending of rails AR objects is working
+** sending of rails AR objects with plugin is working
+
+
+
