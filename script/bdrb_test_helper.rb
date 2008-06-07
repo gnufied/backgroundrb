@@ -35,6 +35,8 @@ module BackgrounDRb
     end
     def debug(data)
     end
+    def error(data)
+    end
   end
   class MetaWorker
     attr_accessor :logger
