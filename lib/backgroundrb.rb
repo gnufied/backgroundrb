@@ -102,6 +102,7 @@ class BackgrounDRb::WorkerProxy
 
   def close_connection
     @connection.close
+    @connection = nil
   end
 
   def ask_work p_data
@@ -144,14 +145,27 @@ class BackgrounDRb::WorkerProxy
   end
 
   def read_object
-    sock_data = ""
     begin
-      while(sock_data << @connection.read_nonblock(1023)); end
-    rescue Errno::EAGAIN
-      @tokenizer.extract(sock_data) { |b_data| return b_data }
+      message_length_str = @connection.read(9)
+      message_length = message_length_str.to_i
+      message_data = @connection.read(message_length)
+      return message_data
     rescue
       raise BackgrounDRb::BdrbConnError.new("Not able to connect")
     end
+
+   # begin
+   #   while(t_data = @connection.read_nonblock((16*1024)-1))
+   #     sock_data << t_data
+   #   end
+   #   return sock_data.join
+   # rescue Errno::EAGAIN
+   #   return sock_data.join
+   # rescue Errno::EWOULDBLOCK
+   #   return sock_data.join
+   # rescue
+   #   raise BackgrounDRb::BdrbConnError.new("Not able to connect",sock_data.join)
+   # end
   end
 
   def query_all_workers
@@ -174,7 +188,7 @@ class BackgrounDRb::WorkerProxy
   end
 
   def read_from_bdrb(timeout = 3)
-    @tokenizer = Packet::BinParser.new
+    #@tokenizer = Packet::BinParser.new
     begin
       ret_val = select([@connection],nil,nil,timeout)
       return nil unless ret_val
