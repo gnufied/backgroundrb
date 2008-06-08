@@ -38,7 +38,7 @@ will always mirror stable releases from Git. However to enjoy latest and greates
 you can install the plugin from git:
 
 <pre class="multiline">
-git clone git://gitorious.org/backgroundrb/mainline.git backgroundrb </pre>
+git clone git://github.com/gnufied/backgroundrb.git </pre>
 
 p(sub-title). Installation using Piston
 
