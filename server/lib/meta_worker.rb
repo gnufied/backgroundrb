@@ -30,14 +30,34 @@ module BackgrounDRb
     end
   end
 
+  class ParallelData
+    attr_accessor :data,:block,:response_block,:guid
+    def initialize(args,&block,&response_block)
+      @data = args
+      @block = block
+      @response_block = response_block
+      @guid = Packet::Guid.hexdigest
+    end
+  end
+
+  class ResultData
+    attr_accessor :data,:block
+    def initialize args,&block
+      @data = args
+      @block = block
+    end
+  end
+
   class ThreadPool
     attr_accessor :size,:threads,:work_queue,:logger
+    attr_accessor :result_queue
     def initialize(size,logger)
       @logger = logger
       @size = size
       @threads = []
       @work_queue = Queue.new
       @running_tasks = Queue.new
+      @result_queue = Queue.new
       @size.times { add_thread }
     end
 
@@ -65,22 +85,34 @@ module BackgrounDRb
       @work_queue << WorkData.new(args,&block)
     end
 
+    def fetch_parallely(*args,&process_block,&response_block)
+      @work_queue << ParallelData.new(args,&process_block,&response_block)
+    end
+
     def add_thread
       @threads << Thread.new do
         while true
           task = @work_queue.pop
           @running_tasks << task
-          block_arity = task.block.arity
-
-          begin
-            ActiveRecord::Base.verify_active_connections!
-            block_arity == 0 ? task.block.call : task.block.call(*(task.data))
-          rescue
-            logger.info($!.to_s)
-            logger.info($!.backtrace.join("\n"))
+          block_result = run_task(task)
+          if task.is_a? ParallelData
+            @result_queue << ResultData.new(block_result,&task.response_block)
           end
           @running_tasks.pop
         end
+      end
+    end
+
+    def run_task task
+      block_arity = task.block.arity
+      begin
+        ActiveRecord::Base.verify_active_connections!
+        result = (block_arity == 0 ? task.block.call : task.block.call(*(task.data)))
+        return result
+      rescue
+        logger.info($!.to_s)
+        logger.info($!.backtrace.join("\n"))
+        return nil
       end
     end
 
