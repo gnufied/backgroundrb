@@ -32,7 +32,7 @@ module BackgrounDRb
 
   class ParallelData
     attr_accessor :data,:block,:response_block,:guid
-    def initialize(args,&block,&response_block)
+    def initialize(args,block,response_block)
       @data = args
       @block = block
       @response_block = response_block
@@ -85,8 +85,8 @@ module BackgrounDRb
       @work_queue << WorkData.new(args,&block)
     end
 
-    def fetch_parallely(*args,&process_block,&response_block)
-      @work_queue << ParallelData.new(args,&process_block,&response_block)
+    def fetch_parallely(args,process_block,response_block)
+      @work_queue << ParallelData.new(args,process_block,response_block)
     end
 
     def add_thread
@@ -101,6 +101,15 @@ module BackgrounDRb
           @running_tasks.pop
         end
       end
+    end
+
+    def result_empty?
+      return true if @result_queue.empty?
+      return false
+    end
+
+    def result_pop
+      @result_queue.pop
     end
 
     def run_task task
@@ -349,7 +358,17 @@ module BackgrounDRb
 
     def connection_completed; end
 
+    def check_for_thread_responses
+      10.times do
+        break if thread_pool.result_empty?
+        result_object = thread_pool.result_pop
+        (result_object.block).call(result_object.data)
+      end
+    end
+
     def check_for_timer_events
+      check_for_thread_responses
+
       begin
         ActiveRecord::Base.verify_active_connections! if defined?(ActiveRecord)
         super
