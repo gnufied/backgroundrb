@@ -29,7 +29,7 @@ You can also try #backgroundrb on freenode for help.
 
 Your contributions/feedback is most welcome. We have very simple rule for giving new coders
 commit access. If you submit one patch which is accepted for inclusion in the _BackgrounDRb_
-code repository, you are elligible for commit access. Create an account on "Gitorious":http://gitorious.org/
+code repository, you are elligible for commit access. Create an account on "Github":http://github.com/
 and let me (gethemant at gmail dot com) know your login handle.
 
 </div>
