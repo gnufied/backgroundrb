@@ -259,10 +259,8 @@ module BackgrounDRb
     end
 
     def load_rails_env
-      # lazy_load = CONFIG_FILE[:backgroundrb][:lazy_load].nil? ? true : CONFIG_FILE[:backgroundrb][:lazy_load].nil?
       db_config_file = YAML.load(ERB.new(IO.read("#{RAILS_HOME}/config/database.yml")).result)
       run_env = ENV["RAILS_ENV"]
-      #       require RAILS_HOME + "/config/environment"
       ActiveRecord::Base.establish_connection(db_config_file[run_env])
       ActiveRecord::Base.allow_concurrency = true
     end
@@ -282,7 +280,7 @@ module BackgrounDRb
       t_reactor.set_result_hash(cache)
     end
 
-    def check_for_ruby_version; return RUBY_VERSION >= "1.8.5"; end
+    def check_for_ruby_version; RUBY_VERSION >= "1.8.5"; end
 
   end # end of module BackgrounDRb
 end
