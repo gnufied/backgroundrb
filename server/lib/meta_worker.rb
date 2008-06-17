@@ -85,6 +85,8 @@ module BackgrounDRb
       @work_queue << WorkData.new(args,&block)
     end
 
+    # Same as defer, but can be used to run a block in a seperate thread and collect results back
+    # in main thread
     def fetch_parallely(args,process_block,response_block)
       @work_queue << ParallelData.new(args,process_block,response_block)
     end
