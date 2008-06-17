@@ -33,7 +33,7 @@ p(sub-title). Getting the code from Subversion :
 
 p(sub-title). Installing from Git:
 
-As of version 1.0.3 __BackgrounDRb__ development has moved to gitorious. Above SVN url
+As of version 1.0.3 __BackgrounDRb__ development has moved to <a href="http://github.com/gnufied/backgroundrb/tree/master">github</a>. Above SVN url
 will always mirror stable releases from Git. However to enjoy latest and greatest of features
 you can install the plugin from git:
 
