@@ -76,15 +76,9 @@ module BackgrounDRb
       job_key = t_data[:job_key]
       worker_name_key = gen_worker_key(worker_name,job_key)
       begin
-        # ask_worker(worker_name,:job_key => t_data[:job_key],:type => :request, :data => { :worker_method => :exit})
         worker_instance = reactor.live_workers[worker_name_key]
-        # pgid = Process.getpgid(worker_instance.pid)
         Process.kill('TERM',worker_instance.pid)
-        # Process.kill('-TERM',pgid)
-
-        # Process.kill('KILL',worker_instance.pid)
       rescue Packet::DisconnectError => sock_error
-        # reactor.live_workers.delete(worker_name_key)
         reactor.remove_worker(sock_error)
       rescue
         debug_logger.info($!.to_s)
@@ -152,10 +146,9 @@ module BackgrounDRb
   end
 
   class MasterProxy
-    attr_accessor :config_file,:reloadable_workers,:worker_triggers,:reactor
+    attr_accessor :reloadable_workers,:worker_triggers,:reactor
     def initialize
       raise "Running old Ruby version, upgrade to Ruby >= 1.8.5" unless check_for_ruby_version
-      @config_file = BackgrounDRb::Config.read_config("#{RAILS_HOME}/config/backgroundrb.yml")
 
       log_flag = CONFIG_FILE[:backgroundrb][:debug_log].nil? ? true : CONFIG_FILE[:backgroundrb][:debug_log]
       debug_logger = DebugMaster.new(CONFIG_FILE[:backgroundrb][:log],log_flag)

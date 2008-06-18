@@ -36,6 +36,5 @@ module BackgrounDRb
       @round_robin = @backend_connections.dup if @round_robin.empty?
       @round_robin.shift
     end
-
-  end
-end
+  end # end of ClusterConnection
+end # end of Module BackgrounDRb

@@ -10,6 +10,7 @@
 ** sending of large objects around is working
 ** sending of rails AR objects is working
 ** sending of rails AR objects with plugin is working
+** Environment is getting loaded properly through config file and command line argument
 
 
 
