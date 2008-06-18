@@ -26,11 +26,12 @@ require RAILS_HOME + "/config/environment"
 require "backgroundrb_server"
 
 pid_file = "#{RAILS_HOME}/tmp/pids/backgroundrb_#{CONFIG_FILE[:backgroundrb][:port]}.pid"
-SERVER_LOGGER = "#{RAILS_HOME}/log/backgroundrb_server_#{CONFIG_FILE[:backgroundrb][:port]}.log"
+SERVER_LOGGER = "#{RAILS_HOME}/log/backgroundrb_debug_#{CONFIG_FILE[:backgroundrb][:port]}.log"
 
 case ARGV[0]
 when 'start'
   if fork
+    sleep(5)
     exit
   else
     op = File.open(pid_file, "w")
