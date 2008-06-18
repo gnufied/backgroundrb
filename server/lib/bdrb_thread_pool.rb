@@ -95,7 +95,8 @@ module BackgrounDRb
       block_arity = task.block.arity
       begin
         ActiveRecord::Base.verify_active_connections!
-        result = (block_arity == 0 ? task.block.call : task.block.call(*(task.data)))
+        data = (task.data.is_a?(Array)) ? *(task.data) : task.data
+        result = (block_arity == 0 ? task.block.call : task.block.call(data))
         return result
       rescue
         logger.info($!.to_s)
@@ -109,7 +110,6 @@ module BackgrounDRb
       if @running_tasks.empty? && @work_queue.empty?
         return
       else
-        # puts "going to sleep for a while"
         sleep(0.05)
         return
       end

@@ -6,8 +6,8 @@ module BackgrounDRb
       @config = BackgrounDRb::Config.read_config("#{BACKGROUNDRB_ROOT}/config/backgroundrb.yml")
       @bdrb_servers = []
       @backend_connections = []
-      @round_robin = []
       establish_connections
+      @round_robin = (0...@backend_connections.length).to_a
     end
 
     # initialize all backend server connections
@@ -32,9 +32,16 @@ module BackgrounDRb
       chosen.worker(worker_name,worker_key)
     end
 
+    def new_worker options = {}
+      chosen = choose_server
+      chosen.new_worker(options)
+    end
+
     def choose_server
-      @round_robin = @backend_connections.dup if @round_robin.empty?
-      @round_robin.shift
+      if @round_robin.empty?
+        @round_robin = (0...@backend_connections.length).to_a
+      end
+      @backend_connections[@round_robin.shift]
     end
   end # end of ClusterConnection
 end # end of Module BackgrounDRb
