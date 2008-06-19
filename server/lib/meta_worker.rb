@@ -110,11 +110,12 @@ module BackgrounDRb
     def worker_init
       @config_file = BackgrounDRb::Config.read_config("#{RAILS_HOME}/config/backgroundrb.yml")
       log_flag = @config_file[:backgroundrb][:debug_log].nil? ? true : @config_file[:backgroundrb][:debug_load_rails_env]
+
       # stores the job key of currently running job
       Thread.current[:job_key] = nil
       @logger = PacketLogger.new(self,log_flag)
       @thread_pool = ThreadPool.new(pool_size || 20,@logger)
-      @result_queue = Queue.new
+      @cache = ResultStorage.new(CONFIG_FILE[:backgroundrb][:result_storage])
 
       if(worker_options && worker_options[:schedule] && no_auto_load)
         load_schedule_from_args
@@ -126,8 +127,6 @@ module BackgrounDRb
         create_arity = method(:create).arity
         (create_arity == 0) ? create : create(worker_options[:data])
       end
-      @logger.info "#{worker_name} started"
-      @logger.info "Schedules for worker loaded"
     end
 
     def job_key; Thread.current[:job_key]; end
@@ -155,17 +154,21 @@ module BackgrounDRb
       case p_data[:type]
       when :request: process_request(p_data)
       when :response: process_response(p_data)
+      when :get_result: return_result_object(p_data)
       end
+    end
+
+    def return_result_object p_data
+      user_input = p_data[:data]
+      user_job_key = user_input[:job_key]
+      send_response(p_data,cache[user_job_key])
     end
 
     # method is responsible for invoking appropriate method in user
     def process_request(p_data)
       user_input = p_data[:data]
-      logger.info "#{user_input[:worker_method]} #{user_input[:data]}"
-      if (user_input[:worker_method]).nil? or !respond_to?(user_input[:worker_method])
-        logger.info "Undefined method #{user_input[:worker_method]} called on worker #{worker_name}"
-        return
-      end
+      return if (user_input[:worker_method]).nil? or !respond_to?(user_input[:worker_method])
+
       called_method_arity = self.method(user_input[:worker_method]).arity
       result = nil
 
@@ -178,7 +181,7 @@ module BackgrounDRb
       end
 
       if p_data[:result]
-        result = "dummy_result" unless result
+        result = "dummy_result" if result.nil?
         send_response(p_data,result) if can_dump?(result)
       end
     end
@@ -209,25 +212,6 @@ module BackgrounDRb
       end
     end
 
-    # probably this method should be made thread safe, so as a method needs to have a
-    # lock or something before it can use the method
-    def register_status p_data
-      status = {:type => :status,:data => p_data}
-      begin
-        send_data(status)
-      rescue TypeError => e
-        status = {:type => :status,:data => "invalid_status_dump_check_log"}
-        send_data(status)
-        logger.info(e.to_s)
-        logger.info(e.backtrace.join("\n"))
-      rescue
-        status = {:type => :status,:data => "invalid_status_dump_check_log"}
-        send_data(status)
-        logger.info($!.to_s)
-        logger.info($!.backtrace.join("\n"))
-      end
-    end
-
     def send_response input,output
       input[:data] = output
       input[:type] = :response
@@ -247,31 +231,11 @@ module BackgrounDRb
       end
     end
 
-    def cache_set key,value
-      t_result = ResultData.new(value,key)
-      @result_queue.push(t_result)
-    end
-
-    def cache_get key
-      # should fetch data from real source.
-    end
-
     def unbind; end
 
     def connection_completed; end
 
-    def check_for_thread_responses
-      10.times do
-        break if thread_pool.result_empty?
-        result_object = thread_pool.result_pop
-        Thread.current[:job_key] = result_object.job_key
-        (result_object.block).call(result_object.data)
-      end
-    end
-
     def check_for_timer_events
-      check_for_thread_responses
-
       begin
         ActiveRecord::Base.verify_active_connections! if defined?(ActiveRecord)
         super
@@ -306,11 +270,7 @@ module BackgrounDRb
     private
     def load_rails_env
       db_config_file = YAML.load(ERB.new(IO.read("#{RAILS_HOME}/config/database.yml")).result)
-      #run_env = @config_file[:backgroundrb][:environment] || 'development'
-      #ENV["RAILS_ENV"] = run_env
       run_env = ENV["RAILS_ENV"]
-      #require RAILS_HOME + "/config/environment"
-      #RAILS_ENV.replace(run_env) if defined?(RAILS_ENV)
       ActiveRecord::Base.establish_connection(db_config_file[run_env])
       ActiveRecord::Base.allow_concurrency = true
     end

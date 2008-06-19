@@ -32,12 +32,14 @@ module BackgrounDRb
         t_data = load_data b_data
         if t_data
           case t_data[:type]
-          when :do_work: process_work(t_data)
-          when :get_status: process_status(t_data)
-          when :get_result: process_request(t_data)
+            # async method invocation
+          when :async_invoke: async_method(t_data)
+            # get status/result
+          when :get_result: get_result_object(t_data)
+            # sync method invocation
+          when :sync_invoke: method_invoke(t_data)
           when :start_worker: start_worker_request(t_data)
           when :delete_worker: delete_drb_worker(t_data)
-          when :all_worker_status: query_all_worker_status(t_data)
           when :worker_info: pass_worker_info(t_data)
           when :all_worker_info: all_worker_info(t_data)
           end
@@ -63,13 +65,6 @@ module BackgrounDRb
       send_object(info_response)
     end
 
-    def query_all_worker_status(p_data)
-      dumpable_status = { }
-      reactor.live_workers.each { |key,value| dumpable_status[key] = reactor.result_hash[key] }
-      send_object(dumpable_status)
-    end
-
-    # FIXME: although worker key is removed nonetheless from live_workers hash
     # it could be a good idea to remove it here itself.
     def delete_drb_worker(t_data)
       worker_name = t_data[:worker]
@@ -90,7 +85,7 @@ module BackgrounDRb
       start_worker(p_data)
     end
 
-    def process_work(t_data)
+    def async_method_invoke(t_data)
       worker_name = t_data[:worker]
       worker_name_key = gen_worker_key(worker_name,t_data[:worker_key])
       t_data.delete(:worker)
@@ -104,18 +99,18 @@ module BackgrounDRb
         debug_logger.info($!.backtrace.join("\n"))
         return
       end
-
     end
 
-    def process_status(t_data)
+    def get_result_object(t_data)
       worker_name = t_data[:worker]
-      worker_key = t_data[:worker_key]
-      worker_name_key = gen_worker_key(worker_name,worker_key)
-      status_data = reactor.result_hash[worker_name_key.to_sym]
-      send_object(status_data)
+      worker_name_key = gen_worker_key(worker_name,t_data[:worker_key])
+      t_data.delete(:worker)
+      t_data.delete(:type)
+
+      send_object(result_data)
     end
 
-    def process_request(t_data)
+    def method_invoke(t_data)
       worker_name = t_data[:worker]
       worker_name_key = gen_worker_key(worker_name,t_data[:worker_key])
       t_data.delete(:worker)

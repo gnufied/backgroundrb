@@ -1,18 +1,10 @@
 module BackgrounDRb
-  # Will use Memcache if specified in configuration file
-  # otherwise it will use in memory hash
   class ResultStorage
-    attr_accessor :storage_type
-    def initalize storage_type = nil
-      @cache = (storage_type == :memcache) ? memcache_instance : {}
-    end
-
-    def [] key
-      @cache[key]
-    end
-
-    def []= key,value
-      @cache[key,value]
+    attr_accessor :cache
+    def initialize storage_type = nil
+      @mutex = Mutex.new
+      @storage_type = storage_type
+      @cache = (@storage_type == :memcache) ? memcache_instance : {}
     end
 
     def memcache_instance
@@ -29,5 +21,35 @@ module BackgrounDRb
       t_cache.servers = CONFIG_FILE[:memcache].split(',')
       t_cache
     end
+
+    def gen_key key
+      if storage_type == :memcache
+        [woker_name,worker_key,key].compact.join('_')
+      else
+        key
+      end
+    end
+
+    def [] key
+      @mutex.synchronize { @cache[gen_key(key)] }
+    end
+
+    def []= key,value
+      @mutex.synchronize { @cache[gen_key(key)] = value }
+    end
+
+    def delete key
+      @mutex.synchronize { @cache.delete(gen_key(key)) }
+    end
+
+    def shift key
+      val = nil
+      @mutex.synchronize do
+        val = @cache[key]
+        @cache.delete(key)
+      end
+      return val
+    end
   end
 end
+

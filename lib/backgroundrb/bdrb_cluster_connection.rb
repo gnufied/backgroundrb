@@ -3,7 +3,6 @@ module BackgrounDRb
   class ClusterConnection
     attr_accessor :backend_connections,:config
     def initialize
-      @config = BackgrounDRb::Config.read_config("#{BACKGROUNDRB_ROOT}/config/backgroundrb.yml")
       @bdrb_servers = []
       @backend_connections = []
       establish_connections
@@ -12,7 +11,7 @@ module BackgrounDRb
 
     # initialize all backend server connections
     def establish_connections
-      if t_servers = @config[:client]
+      if t_servers = BDRB_CONFIG[:client]
         connections = t_servers.split(',')
         connections.each do |conn_string|
           ip = conn_string.split(':')[0]
@@ -20,7 +19,7 @@ module BackgrounDRb
           @bdrb_servers << OpenStruct.new(:ip => ip,:port => port)
         end
       else
-        @bdrb_servers << OpenStruct.new(:ip => @config[:backgroundrb][:ip],:port => @config[:backgroundrb][:port].to_i)
+        @bdrb_servers << OpenStruct.new(:ip => BDRB_CONFIG[:backgroundrb][:ip],:port => BDRB_CONFIG[:backgroundrb][:port].to_i)
       end
       @bdrb_servers.each_with_index do |connection_info,index|
         @backend_connections << Connection.custom_connection(connection_info.ip,connection_info.port)

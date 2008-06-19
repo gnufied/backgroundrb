@@ -15,7 +15,7 @@ module BackgrounDRb
       data = args[0]
       flag = args[1]
       case worker_method
-      when :ask_status
+      when :ask_result
         middle_man.ask_status(compact(:worker => worker_name,:worker_key => worker_key))
       when :worker_info
         middle_man.worker_info(compact(:worker => worker_name,:worker_key => worker_key))

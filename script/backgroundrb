@@ -17,8 +17,6 @@ require "optparse"
 
 require "bdrb_config"
 
-
-
 BackgrounDRb::Config.parse_cmd_options ARGV
 CONFIG_FILE = BackgrounDRb::Config.read_config("#{RAILS_HOME}/config/backgroundrb.yml")
 

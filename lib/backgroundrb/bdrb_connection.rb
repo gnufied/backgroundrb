@@ -87,7 +87,7 @@ module BackgrounDRb
     end
 
     def ask_work p_data
-      p_data[:type] = :do_work
+      p_data[:type] = :async_invoke
       dump_object(p_data)
       close_connection
     end
@@ -107,11 +107,6 @@ module BackgrounDRb
       close_connection
       bdrb_response
     end
-
-    def ask_result options = {}
-
-    end
-
 
     def all_worker_info
       p_data = { }
@@ -140,9 +135,8 @@ module BackgrounDRb
       end
     end
 
-    def query_all_workers
-      p_data = { }
-      p_data[:type] = :all_worker_status
+    def ask_result(p_data)
+      p_data[:type] = :get_result
       dump_object(p_data)
       bdrb_response = nil
       @mutex.synchronize { bdrb_response = read_from_bdrb() }
@@ -150,13 +144,8 @@ module BackgrounDRb
       bdrb_response
     end
 
-    def ask_status(p_data)
-      p_data[:type] = :get_status
-      dump_object(p_data)
-      bdrb_response = nil
-      @mutex.synchronize { bdrb_response = read_from_bdrb() }
-      close_connection
-      bdrb_response
+    def return_result_from_memcache options = {}
+
     end
 
     def read_from_bdrb(timeout = 3)
@@ -173,7 +162,7 @@ module BackgrounDRb
     end
 
     def send_request(p_data)
-      p_data[:type] = :get_result
+      p_data[:type] = :sync_invoke
       dump_object(p_data)
       bdrb_response = nil
       @mutex.synchronize { bdrb_response = read_from_bdrb(nil) }
