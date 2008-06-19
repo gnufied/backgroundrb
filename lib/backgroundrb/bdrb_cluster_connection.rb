@@ -1,12 +1,17 @@
 # class stores connections to BackgrounDRb servers in a cluster manner
 module BackgrounDRb
   class ClusterConnection
-    attr_accessor :backend_connections,:config
+    attr_accessor :backend_connections,:config,:cache
+
     def initialize
       @bdrb_servers = []
       @backend_connections = []
       establish_connections
       @round_robin = (0...@backend_connections.length).to_a
+    end
+
+    def initialize_memcache
+
     end
 
     # initialize all backend server connections

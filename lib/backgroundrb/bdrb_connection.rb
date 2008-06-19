@@ -135,13 +135,25 @@ module BackgrounDRb
       end
     end
 
+    def gen_key options
+      if BDRB_CONFIG[:backgroundr][:result_storage] == :memcache
+        [options[:worker],options[:worker_key]worker_key,options[:job_key]].compact.join('_')
+      else
+        options[:job_key]
+      end
+    end
+
     def ask_result(p_data)
-      p_data[:type] = :get_result
-      dump_object(p_data)
-      bdrb_response = nil
-      @mutex.synchronize { bdrb_response = read_from_bdrb() }
-      close_connection
-      bdrb_response
+      if BDRB_CONFIG[:backgroundr][:result_storage] == :memcache
+        return_result_from_memcache(p_data)
+      else
+        p_data[:type] = :get_result
+        dump_object(p_data)
+        bdrb_response = nil
+        @mutex.synchronize { bdrb_response = read_from_bdrb() }
+        close_connection
+        bdrb_response
+      end
     end
 
     def return_result_from_memcache options = {}
