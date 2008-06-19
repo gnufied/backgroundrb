@@ -16,8 +16,8 @@ module BackgrounDRb
       @mutex = Mutex.new
     end
 
-    def worker(worker_name,job_key = nil)
-      RailsWorkerProxy.worker(worker_name,job_key,self)
+    def worker(worker_name,worker_key = nil)
+      RailsWorkerProxy.worker(worker_name,worker_key,self)
     end
 
     def establish_connection
@@ -96,7 +96,7 @@ module BackgrounDRb
       p_data[:type] = :start_worker
       dump_object(p_data)
       close_connection
-      p_data[:job_key]
+      p_data[:worker_key]
     end
 
     def worker_info(p_data)
@@ -106,6 +106,10 @@ module BackgrounDRb
       @mutex.synchronize { bdrb_response = read_from_bdrb() }
       close_connection
       bdrb_response
+    end
+
+    def ask_result options = {}
+
     end
 
 
@@ -156,7 +160,7 @@ module BackgrounDRb
     end
 
     def read_from_bdrb(timeout = 3)
-      #@tokenizer = Packet::BinParser.new
+      # @tokenizer = Packet::BinParser.new
       begin
         ret_val = select([@connection],nil,nil,timeout)
         return nil unless ret_val

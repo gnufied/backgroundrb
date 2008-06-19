@@ -11,6 +11,21 @@
 ** sending of rails AR objects is working
 ** sending of rails AR objects with plugin is working
 ** Environment is getting loaded properly through config file and command line argument
+** People are unable to call ActionController methods
+
+* Problem with new experimental API
+** there is an issue if user invokes multiple tasks in thread pool directly from one of the worker
+   under current settings they are going to end up with same job key.
+
+** Also, new_worker can't have same method invocation conventions because it accepts more parameters.
+
+* Ideas
+** Okay, use:
+   cache[job_key] = result
+   cache[job_key] =>
+     will return the result. worker_name, worker_key shall be taken in to account.
+
+
 
 
 

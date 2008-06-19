@@ -110,8 +110,11 @@ module BackgrounDRb
     def worker_init
       @config_file = BackgrounDRb::Config.read_config("#{RAILS_HOME}/config/backgroundrb.yml")
       log_flag = @config_file[:backgroundrb][:debug_log].nil? ? true : @config_file[:backgroundrb][:debug_load_rails_env]
+      # stores the job key of currently running job
+      Thread.current[:job_key] = nil
       @logger = PacketLogger.new(self,log_flag)
       @thread_pool = ThreadPool.new(pool_size || 20,@logger)
+      @result_queue = Queue.new
 
       if(worker_options && worker_options[:schedule] && no_auto_load)
         load_schedule_from_args
@@ -126,6 +129,8 @@ module BackgrounDRb
       @logger.info "#{worker_name} started"
       @logger.info "Schedules for worker loaded"
     end
+
+    def job_key; Thread.current[:job_key]; end
 
     # loads workers schedule from options supplied from rails
     # a user may pass trigger arguments to dynamically define the schedule
@@ -163,11 +168,15 @@ module BackgrounDRb
       end
       called_method_arity = self.method(user_input[:worker_method]).arity
       result = nil
+
+      Thread.current[:job_key] = user_input[:job_key]
+
       if called_method_arity != 0
         result = self.send(user_input[:worker_method],user_input[:data])
       else
         result = self.send(user_input[:worker_method])
       end
+
       if p_data[:result]
         result = "dummy_result" unless result
         send_response(p_data,result) if can_dump?(result)
@@ -238,6 +247,15 @@ module BackgrounDRb
       end
     end
 
+    def cache_set key,value
+      t_result = ResultData.new(value,key)
+      @result_queue.push(t_result)
+    end
+
+    def cache_get key
+      # should fetch data from real source.
+    end
+
     def unbind; end
 
     def connection_completed; end
@@ -246,6 +264,7 @@ module BackgrounDRb
       10.times do
         break if thread_pool.result_empty?
         result_object = thread_pool.result_pop
+        Thread.current[:job_key] = result_object.job_key
         (result_object.block).call(result_object.data)
       end
     end

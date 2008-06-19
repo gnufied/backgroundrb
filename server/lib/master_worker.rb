@@ -47,9 +47,9 @@ module BackgrounDRb
 
     #
     def pass_worker_info(t_data)
-      worker_name_key = gen_worker_key(t_data[:worker],t_data[:job_key])
+      worker_name_key = gen_worker_key(t_data[:worker],t_data[:worker_key])
       worker_instance = reactor.live_workers[worker_name_key]
-      info_response = { :worker => t_data[:worker],:job_key => t_data[:job_key]}
+      info_response = { :worker => t_data[:worker],:worker_key => t_data[:worker_key]}
       worker_instance ? (info_response[:status] = :running) : (info_response[:status] = :stopped)
       send_object(info_response)
     end
@@ -57,8 +57,8 @@ module BackgrounDRb
     def all_worker_info(t_data)
       info_response = []
       reactor.live_workers.each do |key,value|
-        job_key = (value.worker_key.to_s).gsub(/#{value.worker_name}_?/,"")
-        info_response << { :worker => value.worker_name,:job_key => job_key,:status => :running }
+        worker_key = (value.worker_key.to_s).gsub(/#{value.worker_name}_?/,"")
+        info_response << { :worker => value.worker_name,:worker_key => worker_key,:status => :running }
       end
       send_object(info_response)
     end
@@ -73,8 +73,8 @@ module BackgrounDRb
     # it could be a good idea to remove it here itself.
     def delete_drb_worker(t_data)
       worker_name = t_data[:worker]
-      job_key = t_data[:job_key]
-      worker_name_key = gen_worker_key(worker_name,job_key)
+      worker_key = t_data[:worker_key]
+      worker_name_key = gen_worker_key(worker_name,worker_key)
       begin
         worker_instance = reactor.live_workers[worker_name_key]
         Process.kill('TERM',worker_instance.pid)
@@ -92,7 +92,7 @@ module BackgrounDRb
 
     def process_work(t_data)
       worker_name = t_data[:worker]
-      worker_name_key = gen_worker_key(worker_name,t_data[:job_key])
+      worker_name_key = gen_worker_key(worker_name,t_data[:worker_key])
       t_data.delete(:worker)
       t_data.delete(:type)
       begin
@@ -109,15 +109,15 @@ module BackgrounDRb
 
     def process_status(t_data)
       worker_name = t_data[:worker]
-      job_key = t_data[:job_key]
-      worker_name_key = gen_worker_key(worker_name,job_key)
+      worker_key = t_data[:worker_key]
+      worker_name_key = gen_worker_key(worker_name,worker_key)
       status_data = reactor.result_hash[worker_name_key.to_sym]
       send_object(status_data)
     end
 
     def process_request(t_data)
       worker_name = t_data[:worker]
-      worker_name_key = gen_worker_key(worker_name,t_data[:job_key])
+      worker_name_key = gen_worker_key(worker_name,t_data[:worker_key])
       t_data.delete(:worker)
       t_data.delete(:type)
       begin
@@ -166,9 +166,9 @@ module BackgrounDRb
       end
     end
 
-    def gen_worker_key(worker_name,job_key = nil)
-      return worker_name if job_key.nil?
-      return "#{worker_name}_#{job_key}".to_sym
+    def gen_worker_key(worker_name,worker_key = nil)
+      return worker_name if worker_key.nil?
+      return "#{worker_name}_#{worker_key}".to_sym
     end
 
 
@@ -230,9 +230,9 @@ module BackgrounDRb
     def load_and_invoke(worker_name,p_method,data)
       begin
         require worker_name.to_s
-        job_key = Packet::Guid.hexdigest
-        @reactor.start_worker(:worker => worker_name,:job_key => job_key)
-        worker_name_key = gen_worker_key(worker_name,job_key)
+        worker_key = Packet::Guid.hexdigest
+        @reactor.start_worker(:worker => worker_name,:worker_key => worker_key)
+        worker_name_key = gen_worker_key(worker_name,worker_key)
         data_request = {:data => { :worker_method => p_method,:data => data[:data]},
           :type => :request, :result => false
         }

@@ -1,27 +1,29 @@
 module BackgrounDRb
   class WorkData
     attr_accessor :data,:block
-    def initialize(args,&block)
+    def initialize(args,job_key,&block)
       @data = args
+      @job_key = job_key
       @block = block
     end
   end
 
   class ParallelData
-    attr_accessor :data,:block,:response_block,:guid
-    def initialize(args,block,response_block)
+    attr_accessor :data,:block,:response_block,:job_key
+    def initialize(args,job_key,block,response_block)
       @data = args
       @block = block
       @response_block = response_block
-      @guid = Packet::Guid.hexdigest
+      @job_key = job_key
     end
   end
 
   class ResultData
-    attr_accessor :data,:block
-    def initialize args,&block
+    attr_accessor :data,:block,:job_key
+    def initialize args,job_key,&block
       @data = args
       @block = block
+      @job_key = job_key
     end
   end
 
@@ -59,23 +61,27 @@ module BackgrounDRb
     # assuming method is defined in rss_worker
 
     def defer(*args,&block)
-      @work_queue << WorkData.new(args,&block)
+      job_key = Thread.current[:job_key]
+      @work_queue << WorkData.new(args,job_key,&block)
     end
 
     # Same as defer, but can be used to run a block in a seperate thread and collect results back
     # in main thread
-    def fetch_parallely(args,process_block,response_block)
-      @work_queue << ParallelData.new(args,process_block,response_block)
+    def run_concurrent(args,process_block,response_block)
+      job_key = Thread.current[:job_key]
+      @work_queue << ParallelData.new(args,job_key,process_block,response_block)
     end
 
     def add_thread
       @threads << Thread.new do
+        Thread.current[:job_key] = nil
         while true
           task = @work_queue.pop
+          job_key = task.job_key
           @running_tasks << task
           block_result = run_task(task)
           if task.is_a? ParallelData
-            @result_queue << ResultData.new(block_result,&task.response_block)
+            @result_queue << ResultData.new(block_result,job_key,&task.response_block)
           end
           @running_tasks.pop
         end
