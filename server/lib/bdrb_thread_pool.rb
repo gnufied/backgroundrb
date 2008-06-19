@@ -77,12 +77,9 @@ module BackgrounDRb
         Thread.current[:job_key] = nil
         while true
           task = @work_queue.pop
-          job_key = task.job_key
+          Thread.current[:job_key] = task.job_key
           @running_tasks << task
           block_result = run_task(task)
-          if task.is_a? ParallelData
-            @result_queue << ResultData.new(block_result,job_key,&task.response_block)
-          end
           @running_tasks.pop
         end
       end

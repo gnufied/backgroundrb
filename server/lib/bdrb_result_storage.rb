@@ -1,7 +1,9 @@
 module BackgrounDRb
   class ResultStorage
-    attr_accessor :cache
-    def initialize storage_type = nil
+    attr_accessor :cache,:worker_name,:worker_key
+    def initialize(worker_name,worker_key,storage_type = nil)
+      @worker_name = worker_name
+      @worker_key = worker_key
       @mutex = Mutex.new
       @storage_type = storage_type
       @cache = (@storage_type == :memcache) ? memcache_instance : {}
