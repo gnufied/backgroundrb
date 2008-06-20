@@ -25,6 +25,18 @@
    cache[job_key] =>
      will return the result. worker_name, worker_key shall be taken in to account.
 
+** Write a Rails controller that returns following information:
+   - For each BackgrounDRb server:
+     - Workers running
+     - Memory taken by them
+     - Number of threads in thread pool
+     - Number of Tasks in Queue
+     - If any worker key
+     - Perhaps a count of open file descriptors
+     - Scheduled tasks and next turn
+  - Overall memory taken by entire BackgrounDRb server.
+
+
 
 
 

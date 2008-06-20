@@ -1,6 +1,6 @@
 module BackgrounDRb
   class ResultStorage
-    attr_accessor :cache,:worker_name,:worker_key
+    attr_accessor :cache,:worker_name,:worker_key,:storage_type
     def initialize(worker_name,worker_key,storage_type = nil)
       @worker_name = worker_name
       @worker_key = worker_key

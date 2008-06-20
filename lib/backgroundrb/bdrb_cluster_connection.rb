@@ -6,12 +6,23 @@ module BackgrounDRb
     def initialize
       @bdrb_servers = []
       @backend_connections = []
+      initialize_memcache if BDRB_CONFIG[:backgroundrb][:result_storage] == :memcache
       establish_connections
       @round_robin = (0...@backend_connections.length).to_a
     end
 
     def initialize_memcache
-
+      require 'memcache'
+      memcache_options = {
+        :c_threshold => 10_000,
+        :compression => true,
+        :debug => false,
+        :namespace => 'backgroundrb_result_hash',
+        :readonly => false,
+        :urlencode => false
+      }
+      @cache = MemCache.new(memcache_options)
+      @cache.servers = BDRB_CONFIG[:memcache].split(',')
     end
 
     # initialize all backend server connections
@@ -27,7 +38,7 @@ module BackgrounDRb
         @bdrb_servers << OpenStruct.new(:ip => BDRB_CONFIG[:backgroundrb][:ip],:port => BDRB_CONFIG[:backgroundrb][:port].to_i)
       end
       @bdrb_servers.each_with_index do |connection_info,index|
-        @backend_connections << Connection.custom_connection(connection_info.ip,connection_info.port)
+        @backend_connections << Connection.new(connection_info.ip,connection_info.port,self)
       end
     end # end of method establish_connections
 

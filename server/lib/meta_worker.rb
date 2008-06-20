@@ -86,7 +86,7 @@ module BackgrounDRb
   class MetaWorker < Packet::Worker
     include BackgrounDRb::BdrbServerHelper
     attr_accessor :config_file, :my_schedule, :run_time, :trigger_type, :trigger
-    attr_accessor :logger, :thread_pool
+    attr_accessor :logger, :thread_pool,:cache
     iattr_accessor :pool_size
     iattr_accessor :reload_flag
 

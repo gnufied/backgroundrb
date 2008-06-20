@@ -1,4 +1,5 @@
 require "chronic"
+require "lib/bdrb_result_storage"
 require "lib/bdrb_thread_pool"
 require "lib/bdrb_server_helper"
 require "lib/master_worker"

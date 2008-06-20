@@ -106,8 +106,15 @@ module BackgrounDRb
       worker_name_key = gen_worker_key(worker_name,t_data[:worker_key])
       t_data.delete(:worker)
       t_data.delete(:type)
-
-      send_object(result_data)
+      begin
+        ask_worker(worker_name_key,:data => t_data, :type => :get_result,:result => true)
+      rescue Packet::DisconnectError => sock_error
+        reactor.live_workers.delete(worker_name_key)
+      rescue
+        debug_logger.info($!.to_s)
+        debug_logger.info($!.backtrace.join("\n"))
+        return
+      end
     end
 
     def method_invoke(t_data)

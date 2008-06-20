@@ -1,20 +1,13 @@
 module BackgrounDRb
   class Connection
-    def self.server_ip; @server_ip; end
-    def self.server_port; @server_port; end
-
-    def server_ip; self.class.server_ip; end
-    def server_port; self.class.server_port; end
-
-    def self.custom_connection(ip,port)
+    attr_accessor :server_ip,:server_port,:cluster_conn
+    def initialize ip,port,cluster_conn
+      @mutex = Mutex.new
       @server_ip = ip
       @server_port = port
-      new
+      @cluster_conn = cluster_conn
     end
 
-    def initialize
-      @mutex = Mutex.new
-    end
 
     def worker(worker_name,worker_key = nil)
       RailsWorkerProxy.worker(worker_name,worker_key,self)
@@ -136,15 +129,15 @@ module BackgrounDRb
     end
 
     def gen_key options
-      if BDRB_CONFIG[:backgroundr][:result_storage] == :memcache
-        [options[:worker],options[:worker_key]worker_key,options[:job_key]].compact.join('_')
+      if BDRB_CONFIG[:backgroundrb][:result_storage] == :memcache
+        [options[:worker],options[:worker_key],options[:job_key]].compact.join('_')
       else
         options[:job_key]
       end
     end
 
     def ask_result(p_data)
-      if BDRB_CONFIG[:backgroundr][:result_storage] == :memcache
+      if BDRB_CONFIG[:backgroundrb][:result_storage] == :memcache
         return_result_from_memcache(p_data)
       else
         p_data[:type] = :get_result
@@ -152,12 +145,12 @@ module BackgrounDRb
         bdrb_response = nil
         @mutex.synchronize { bdrb_response = read_from_bdrb() }
         close_connection
-        bdrb_response
+        return bdrb_response[:data]
       end
     end
 
     def return_result_from_memcache options = {}
-
+      cluster_conn.cache[gen_key(options)]
     end
 
     def read_from_bdrb(timeout = 3)

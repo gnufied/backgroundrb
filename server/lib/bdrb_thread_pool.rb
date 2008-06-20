@@ -98,7 +98,8 @@ module BackgrounDRb
       block_arity = task.block.arity
       begin
         ActiveRecord::Base.verify_active_connections!
-        data = (task.data.is_a?(Array)) ? *(task.data) : task.data
+        #data = (task.data.is_a?(Array)) ? *(task.data) : task.data
+        data = task.data
         result = (block_arity == 0 ? task.block.call : task.block.call(data))
         return result
       rescue
