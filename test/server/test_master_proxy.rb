@@ -26,7 +26,6 @@ context "Master proxy for reloadable workers" do
   end
 
   specify "load schedule should load schedule of worker specified" do
-    # @master_proxy.find_reloadable_worker
     sleep(5)
     sheep = mock()
     sheep.expects(:send_request).at_most(4)
@@ -38,11 +37,15 @@ context "Master proxy for reloadable workers" do
     @master_proxy.reload_workers
   end
 
-  specify "should invoke worker methods which are ready to run" do
-
-  end
-
   specify "should not run worker methods which are not ready to run" do
-
+    sleep(1)
+    sheep = mock()
+    sheep.expects(:send_request).at_most(4)
+    live_workers = Hash.new(sheep)
+    crap_reactor = mock()
+    crap_reactor.expects(:start_worker).at_most(2)
+    crap_reactor.expects(:live_workers).at_most(4).returns(live_workers)
+    @master_proxy.reactor = crap_reactor
+    @master_proxy.reload_workers
   end
 end
