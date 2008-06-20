@@ -26,7 +26,6 @@ context "Master proxy for reloadable workers" do
   end
 
   specify "load schedule should load schedule of worker specified" do
-    #require "bar_worker"
     @master_proxy.load_reloadable_schedule(BarWorker).should.not.be { }
   end
 

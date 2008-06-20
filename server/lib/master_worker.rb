@@ -204,7 +204,10 @@ module BackgrounDRb
         when Hash
           trigger = BackgrounDRb::Trigger.new(value[:trigger_args])
         end
-        worker_method_triggers[key] = { :trigger => trigger,:data => value[:data],:runtime => trigger.fire_after_time(Time.now).to_i }
+        worker_method_triggers[key] = {
+          :trigger => trigger,:data => value[:data],
+          :runtime => trigger.fire_after_time(Time.now).to_i
+        }
       end
       worker_method_triggers
     end
