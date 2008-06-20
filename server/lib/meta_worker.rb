@@ -175,7 +175,7 @@ module BackgrounDRb
       Thread.current[:job_key] = user_input[:job_key]
 
       if called_method_arity != 0
-        result = self.send(user_input[:worker_method],user_input[:data])
+        result = self.send(user_input[:worker_method],user_input[:arg])
       else
         result = self.send(user_input[:worker_method])
       end
