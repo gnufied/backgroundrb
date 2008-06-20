@@ -1,41 +1,41 @@
-require File.join(File.dirname(__FILE__) + "/bdrb_test_helper")
+require File.join(File.dirname(__FILE__) + "/..","bdrb_test_helper")
 
-context "Master proxy for reloadable workers" do 
-  BackgrounDRb::Config::RAILS_ENV = "production"
-  CONFIG_FILE = {:schedules=> 
+context "Master proxy for reloadable workers" do
+  ENV["RAILS_ENV"] = "production"
+  BDRB_CONFIG = {:schedules=>
     {
       :foo_worker => { :barbar => {:trigger_args=>"*/10 * * * * *", :data =>"Hello World" }},
       :bar_worker => { :do_job => {:trigger_args=>"*/10 * * * * *", :data =>"Hello World" }}
-    }, 
-    :backgroundrb=> {:log=>"foreground", :lazy_load=>true, :debug_log=>false, :environment=>"production", :port=>11006, :ip=>"localhost"}
+    },
+    :backgroundrb=> {:log => "foreground", :debug_log => false, :environment => "production", :port => 11006, :ip => "localhost"}
   }
-  
-  setup do 
+
+  setup do
     Packet::Reactor.stubs(:run)
     @master_proxy = BackgrounDRb::MasterProxy.new
   end
-  
+
   specify "should load schedule of workers which are reloadable" do
     @master_proxy.find_reloadable_worker
-    @master_proxy.reloadable_workers.should.not.be []
+    @master_proxy.reloadable_workers.should.not == []
     @master_proxy.reloadable_workers.should == [BarWorker]
     @master_proxy.worker_triggers.should.not.be {}
     assert @master_proxy.worker_triggers.keys.include?(:bar_worker)
     assert @master_proxy.worker_triggers[:bar_worker].keys.include?(:do_job)
     @master_proxy.worker_triggers[:bar_worker][:do_job].should.not.be { }
   end
-  
+
   specify "load schedule should load schedule of worker specified" do
-    require "bar_worker" 
+    #require "bar_worker"
     @master_proxy.load_reloadable_schedule(BarWorker).should.not.be { }
   end
-  
+
   specify "should invoke worker methods which are ready to run" do
-    
+
   end
-  
+
   specify "should not run worker methods which are not ready to run" do
-    
+
   end
 end
 

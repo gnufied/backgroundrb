@@ -18,13 +18,13 @@ require "optparse"
 require "bdrb_config"
 
 BackgrounDRb::Config.parse_cmd_options ARGV
-CONFIG_FILE = BackgrounDRb::Config.read_config("#{RAILS_HOME}/config/backgroundrb.yml")
+BDRB_CONFIG = BackgrounDRb::Config.read_config("#{RAILS_HOME}/config/backgroundrb.yml")
 
 require RAILS_HOME + "/config/environment"
 require "backgroundrb_server"
 
-pid_file = "#{RAILS_HOME}/tmp/pids/backgroundrb_#{CONFIG_FILE[:backgroundrb][:port]}.pid"
-SERVER_LOGGER = "#{RAILS_HOME}/log/backgroundrb_debug_#{CONFIG_FILE[:backgroundrb][:port]}.log"
+pid_file = "#{RAILS_HOME}/tmp/pids/backgroundrb_#{BDRB_CONFIG[:backgroundrb][:port]}.pid"
+SERVER_LOGGER = "#{RAILS_HOME}/log/backgroundrb_debug_#{BDRB_CONFIG[:backgroundrb][:port]}.log"
 
 case ARGV[0]
 when 'start'
@@ -35,7 +35,7 @@ when 'start'
     op = File.open(pid_file, "w")
     op.write(Process.pid().to_s)
     op.close
-    if CONFIG_FILE[:backgroundrb][:log].nil? or CONFIG_FILE[:backgroundrb][:log] != 'foreground'
+    if BDRB_CONFIG[:backgroundrb][:log].nil? or BDRB_CONFIG[:backgroundrb][:log] != 'foreground'
       log_file = File.open(SERVER_LOGGER,"w+")
       [STDIN, STDOUT, STDERR].each {|desc| desc.reopen(log_file)}
     end

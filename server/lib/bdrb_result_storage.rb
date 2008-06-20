@@ -20,7 +20,7 @@ module BackgrounDRb
         :urlencode => false
       }
       t_cache = MemCache.new(memcache_options)
-      t_cache.servers = CONFIG_FILE[:memcache].split(',')
+      t_cache.servers = BDRB_CONFIG[:memcache].split(',')
       t_cache
     end
 

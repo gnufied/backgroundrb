@@ -14,9 +14,10 @@ SERVER_LOGGER = RAILS_HOME + "/log/backgroundrb_debug.log"
 ["server","server/lib","lib","lib/backgroundrb"].each { |x| $LOAD_PATH.unshift(PACKET_APP + "/#{x}")}
 $LOAD_PATH.unshift(WORKER_ROOT)
 
-# require "#{PACKET_APP}/server/master_worker"
 require "packet"
-require "backgroundrb_server"
 require "bdrb_config"
-# there should be a way to stub out reactor loop of bdrb
+
+
+require "backgroundrb_server"
+
 

@@ -9,7 +9,7 @@ module BackgrounDRb
       if @log_mode == :foreground
         @logger = ::Logger.new(STDOUT)
       else
-        @logger = ::Logger.new("#{RAILS_HOME}/log/backgroundrb_debug_#{CONFIG_FILE[:backgroundrb][:port]}.log")
+        @logger = ::Logger.new("#{RAILS_HOME}/log/backgroundrb_debug_#{BDRB_CONFIG[:backgroundrb][:port]}.log")
       end
     end
 
@@ -152,8 +152,8 @@ module BackgrounDRb
     def initialize
       raise "Running old Ruby version, upgrade to Ruby >= 1.8.5" unless check_for_ruby_version
 
-      log_flag = CONFIG_FILE[:backgroundrb][:debug_log].nil? ? true : CONFIG_FILE[:backgroundrb][:debug_log]
-      debug_logger = DebugMaster.new(CONFIG_FILE[:backgroundrb][:log],log_flag)
+      log_flag = BDRB_CONFIG[:backgroundrb][:debug_log].nil? ? true : BDRB_CONFIG[:backgroundrb][:debug_log]
+      debug_logger = DebugMaster.new(BDRB_CONFIG[:backgroundrb][:log],log_flag)
 
       load_rails_env
 
@@ -161,9 +161,9 @@ module BackgrounDRb
 
       Packet::Reactor.run do |t_reactor|
         @reactor = t_reactor
-        enable_memcache_result_hash(t_reactor) if CONFIG_FILE[:backgroundrb][:result_storage] && CONFIG_FILE[:backgroundrb][:result_storage][:memcache]
+        enable_memcache_result_hash(t_reactor) if BDRB_CONFIG[:backgroundrb][:result_storage] && BDRB_CONFIG[:backgroundrb][:result_storage][:memcache]
         t_reactor.start_worker(:worker => :log_worker) if log_flag
-        t_reactor.start_server(CONFIG_FILE[:backgroundrb][:ip],CONFIG_FILE[:backgroundrb][:port],MasterWorker) { |conn|  conn.debug_logger = debug_logger }
+        t_reactor.start_server(BDRB_CONFIG[:backgroundrb][:ip],BDRB_CONFIG[:backgroundrb][:port],MasterWorker) { |conn|  conn.debug_logger = debug_logger }
         t_reactor.next_turn { reload_workers }
       end
     end
@@ -194,7 +194,7 @@ module BackgrounDRb
 
     def load_reloadable_schedule(t_worker)
       worker_method_triggers = { }
-      worker_schedule = CONFIG_FILE[:schedules][t_worker.worker_name.to_sym]
+      worker_schedule = BDRB_CONFIG[:schedules][t_worker.worker_name.to_sym]
 
       worker_schedule && worker_schedule.each do |key,value|
         case value[:trigger_args]
@@ -271,7 +271,7 @@ module BackgrounDRb
         :urlencode => false
       }
       cache = MemCache.new(memcache_options)
-      cache.servers = CONFIG_FILE[:backgroundrb][:result_storage][:memcache].split(',')
+      cache.servers = BDRB_CONFIG[:backgroundrb][:result_storage][:memcache].split(',')
       t_reactor.set_result_hash(cache)
     end
 
