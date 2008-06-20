@@ -47,6 +47,14 @@ module BackgrounDRb
       chosen.worker(worker_name,worker_key)
     end
 
+    def all_worker_info
+      info_data = {}
+      @backend_connections.each do |t_connection|
+        info_data[t_connection.server_info] = t_connection.all_worker_info
+      end
+      return info_data
+    end
+
     def new_worker options = {}
       chosen = choose_server
       chosen.new_worker(options)

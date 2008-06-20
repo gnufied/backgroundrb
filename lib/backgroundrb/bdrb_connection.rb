@@ -51,6 +51,10 @@ module BackgrounDRb
       end
     end
 
+    def server_info
+      "#{server_ip}:#{server_port}"
+    end
+
     def flush_in_loop(data)
       t_length = data.length
       loop do
