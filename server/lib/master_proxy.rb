@@ -74,6 +74,7 @@ module BackgrounDRb
       end
 
       worker_triggers.each do |worker_name,trigger|
+        p worker_name
         trigger.each do |key,value|
           time_now = Time.now.to_i
           if value[:runtime] < time_now
