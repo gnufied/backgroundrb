@@ -33,7 +33,7 @@ module BackgrounDRb
         if t_data
           case t_data[:type]
             # async method invocation
-          when :async_invoke: async_method(t_data)
+          when :async_invoke: async_method_invoke(t_data)
             # get status/result
           when :get_result: get_result_object(t_data)
             # sync method invocation

@@ -166,7 +166,12 @@ module BackgrounDRb
     # method is responsible for invoking appropriate method in user
     def process_request(p_data)
       user_input = p_data[:data]
-      return if (user_input[:worker_method]).nil? or !respond_to?(user_input[:worker_method])
+      if (user_input[:worker_method]).nil? or !respond_to?(user_input[:worker_method])
+        p user_input[:worker_method]
+        result = nil
+        send_response(p_data,result)
+        return
+      end
 
       called_method_arity = self.method(user_input[:worker_method]).arity
       result = nil
@@ -174,7 +179,7 @@ module BackgrounDRb
       Thread.current[:job_key] = user_input[:job_key]
 
       if called_method_arity != 0
-        result = self.send(user_input[:worker_method],user_input[:arg])
+        result = self.send(user_input[:worker_method],*user_input[:arg])
       else
         result = self.send(user_input[:worker_method])
       end

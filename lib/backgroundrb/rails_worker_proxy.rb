@@ -12,27 +12,29 @@ module BackgrounDRb
 
     def method_missing(method_id,*args)
       worker_method = method_id
-      data = args[0]
+      data = args
       case worker_method
       when :ask_result
-        middle_man.ask_result(compact(:worker => worker_name,:worker_key => worker_key,:job_key => data))
+        middle_man.ask_result(compact(:worker => worker_name,:worker_key => worker_key,:job_key => data[0]))
       when :worker_info
         middle_man.worker_info(compact(:worker => worker_name,:worker_key => worker_key))
       when :delete
         middle_man.delete_worker(compact(:worker => worker_name, :worker_key => worker_key))
       else
-        choose_method(worker_method,data)
+        choose_method(worker_method.to_s,data)
       end
     end
 
     def choose_method worker_method,data
+      job_key = data.shift
       if worker_method =~ /^async_(\w+)/
         method_name = $1
-        middle_man.ask_work(compact(:worker => worker_name,:worker_key => worker_key,:worker_method => method_name,:data => data))
+        middle_man.ask_work(compact(:worker => worker_name,:worker_key => worker_key,:worker_method => method_name,:job_key => job_key, :arg => data))
       else
-        middle_man.send_request(compact(:worker => worker_name,:worker_key => worker_key,:worker_method => worker_method,:data => data))
+        middle_man.send_request(compact(:worker => worker_name,:worker_key => worker_key,:worker_method => worker_method,:job_key => job_key,:arg => data))
       end
     end
+
 
     def compact(options = { })
       options.delete_if { |key,value| value.nil? }
