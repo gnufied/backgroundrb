@@ -13,7 +13,7 @@ module BackgrounDRb
 
       Packet::Reactor.run do |t_reactor|
         @reactor = t_reactor
-        t_reactor.start_worker(:worker => :log_worker) if log_flag
+        t_reactor.start_worker(:worker => :log_worker,:worker_env => false) if log_flag
         t_reactor.start_server(BDRB_CONFIG[:backgroundrb][:ip],
                                BDRB_CONFIG[:backgroundrb][:port],MasterWorker) do |conn|
           conn.debug_logger = debug_logger
