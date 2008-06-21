@@ -48,7 +48,9 @@ module BackgrounDRb
 
     def load_reloadable_schedule(t_worker)
       worker_method_triggers = { }
-      worker_schedule = BDRB_CONFIG[:schedules][t_worker.worker_name.to_sym]
+      all_schedules = BDRB_CONFIG[:schedules]
+      return if all_schedules.nil? or all_schedules.empty?
+      worker_schedule = all_schedules[t_worker.worker_name.to_sym]
 
       worker_schedule && worker_schedule.each do |key,value|
         case value[:trigger_args]
@@ -99,9 +101,11 @@ module BackgrounDRb
         exit_request = {:data => { :worker_method => :exit},
           :type => :request, :result => false
         }
-
-        @reactor.live_workers[worker_name_key].send_request(data_request)
-        @reactor.live_workers[worker_name_key].send_request(exit_request)
+        t_worker = @reactor.live_workers[worker_name_key]
+        if t_worker
+          t_worker.send_request(data_request)
+          t_worker.send_request(exit_request)
+        end
       rescue LoadError
         puts "no such worker #{worker_name}"
       rescue MissingSourceFile

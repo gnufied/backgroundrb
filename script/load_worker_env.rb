@@ -12,8 +12,10 @@ require "erb"
 require "logger"
 require "optparse"
 require "bdrb_config"
+require RAILS_HOME + "/config/boot"
+require "active_support"
 
 BDRB_CONFIG = BackgrounDRb::Config.read_config("#{RAILS_HOME}/config/backgroundrb.yml")
-
-require "backgroundrb_server"
 require RAILS_HOME + "/config/environment"
+require "backgroundrb_server"
+
