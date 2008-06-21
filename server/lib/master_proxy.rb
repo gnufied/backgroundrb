@@ -101,9 +101,6 @@ module BackgrounDRb
         exit_request = {:data => { :worker_method => :exit},
           :type => :request, :result => false
         }
-        p worker_name_key
-        p @reactor.live_workers.internal_hash.keys
-
         t_worker = @reactor.live_workers[worker_name_key]
         if t_worker
           t_worker.send_request(data_request)
