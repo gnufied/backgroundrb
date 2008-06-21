@@ -149,7 +149,6 @@ module BackgrounDRb
     def receive_data p_data
       if p_data[:data][:worker_method] == :exit
         exit
-        return
       end
       case p_data[:type]
       when :request: process_request(p_data)
