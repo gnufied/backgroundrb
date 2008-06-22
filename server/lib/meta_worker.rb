@@ -127,6 +127,7 @@ module BackgrounDRb
         create_arity = method(:create).arity
         (create_arity == 0) ? create : create(worker_options[:data])
       end
+      add_periodic_timer(1) { check_for_enqueued_tasks }
     end
 
     def job_key; Thread.current[:job_key]; end
@@ -263,7 +264,7 @@ module BackgrounDRb
 
     def check_for_timer_events
       super
-      check_for_enqueued_tasks
+      #check_for_enqueued_tasks
       return if @worker_method_triggers.nil? or @worker_method_triggers.empty?
       @worker_method_triggers.delete_if { |key,value| value[:trigger].respond_to?(:end_time) && value[:trigger].end_time <= Time.now }
 
