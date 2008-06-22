@@ -262,13 +262,7 @@ module BackgrounDRb
     end
 
     def check_for_timer_events
-      begin
-        ActiveRecord::Base.verify_active_connections! if defined?(ActiveRecord)
-        super
-      rescue
-        logger.info($!.to_s)
-        logger.info($!.backtrace.join("\n"))
-      end
+      super
       check_for_enqueued_tasks
       return if @worker_method_triggers.nil? or @worker_method_triggers.empty?
       @worker_method_triggers.delete_if { |key,value| value[:trigger].respond_to?(:end_time) && value[:trigger].end_time <= Time.now }
@@ -276,6 +270,7 @@ module BackgrounDRb
       @worker_method_triggers.each do |key,value|
         time_now = Time.now.to_i
         if value[:runtime] < time_now
+          check_db_connection
           begin
             (t_data = value[:data]) ? send(key,t_data) : send(key)
           rescue
@@ -285,6 +280,15 @@ module BackgrounDRb
           t_time = value[:trigger].fire_after_time(Time.now)
           value[:runtime] = t_time.to_i
         end
+      end
+    end
+
+    def check_db_connection
+      begin
+        ActiveRecord::Base.verify_active_connections! if defined?(ActiveRecord)
+      rescue
+        logger.info($!.to_s)
+        logger.info($!.backtrace.join("\n"))
       end
     end
 
