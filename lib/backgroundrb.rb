@@ -8,6 +8,7 @@ BACKGROUNDRB_ROOT = Pathname.new(RAILS_ROOT).realpath.to_s
 require "backgroundrb/bdrb_config"
 BDRB_CONFIG = BackgrounDRb::Config.read_config("#{BACKGROUNDRB_ROOT}/config/backgroundrb.yml")
 
+require "backgroundrb/bdrb_job_queue"
 require "backgroundrb/bdrb_conn_error"
 require "backgroundrb/rails_worker_proxy"
 require "backgroundrb/bdrb_connection"

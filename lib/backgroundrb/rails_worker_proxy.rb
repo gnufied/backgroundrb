@@ -30,11 +30,15 @@ module BackgrounDRb
       if worker_method =~ /^async_(\w+)/
         method_name = $1
         middle_man.ask_work(compact(:worker => worker_name,:worker_key => worker_key,:worker_method => method_name,:job_key => job_key, :arg => data))
+      elsif worker_method =~ /^enq_(\w+)/i
+        method_name = $1
+        args = Marshal.dump([data[0]])
+        options = data[1]
+        middle_man.enqueue_task(compact(:worker_name => worker_name.to_s,:worker_key => worker_key.to_s,:worker_method => method_name.to_s,:job_key => job_key.to_s, :args => args,:timeout => options[:timeout]))
       else
         middle_man.send_request(compact(:worker => worker_name,:worker_key => worker_key,:worker_method => worker_method,:job_key => job_key,:arg => data))
       end
     end
-
 
     def compact(options = { })
       options.delete_if { |key,value| value.nil? }

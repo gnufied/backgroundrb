@@ -158,7 +158,6 @@ module BackgrounDRb
     end
 
     def read_from_bdrb(timeout = 3)
-      # @tokenizer = Packet::BinParser.new
       begin
         ret_val = select([@connection],nil,nil,timeout)
         return nil unless ret_val
@@ -168,6 +167,10 @@ module BackgrounDRb
       rescue
         return nil
       end
+    end
+
+    def enqueue_task options = {}
+      BdrbJobQueue.insert_job(options)
     end
 
     def send_request(p_data)

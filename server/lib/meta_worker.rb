@@ -130,6 +130,7 @@ module BackgrounDRb
     end
 
     def job_key; Thread.current[:job_key]; end
+    def worker_key; worker_options[:worker_key]; end
 
     # loads workers schedule from options supplied from rails
     # a user may pass trigger arguments to dynamically define the schedule
@@ -240,6 +241,26 @@ module BackgrounDRb
 
     def connection_completed; end
 
+    def check_for_enqueued_tasks
+      if worker_key && !worker_key.empty?
+        task = BdrbJobQueue.find_next(worker_name.to_s,worker_key.to_s)
+      else
+        task = BdrbJobQueue.find_next(worker_name.to_s)
+      end
+      return unless task
+      if self.respond_to? task.worker_method
+        called_method_arity = self.method(task.worker_method).arity
+        args = load_data(task.args)
+        if called_method_arity != 0
+          self.send(task.worker_method,*args)
+        else
+          self.send(task.worker_method)
+        end
+      else
+        task.release_job
+      end
+    end
+
     def check_for_timer_events
       begin
         ActiveRecord::Base.verify_active_connections! if defined?(ActiveRecord)
@@ -248,7 +269,7 @@ module BackgrounDRb
         logger.info($!.to_s)
         logger.info($!.backtrace.join("\n"))
       end
-
+      check_for_enqueued_tasks
       return if @worker_method_triggers.nil? or @worker_method_triggers.empty?
       @worker_method_triggers.delete_if { |key,value| value[:trigger].respond_to?(:end_time) && value[:trigger].end_time <= Time.now }
 
