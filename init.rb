@@ -4,4 +4,4 @@
 end
 
 require 'backgroundrb'
-require "backgroundrb_status_controller"
+#require "backgroundrb_status_controller"

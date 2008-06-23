@@ -10,8 +10,11 @@
 ** sending of large objects around is working
 ** sending of rails AR objects is working
 ** sending of rails AR objects with plugin is working
-** Environment is getting loaded properly through config file and command line argument
-** People are unable to call ActionController methods
+** Environment is getting loaded properly through config file and command line argument.
+** People are unable to call ActionController methods.
+** People should be able to use multiple args while invoking methods.
+** Check if clustering is working.
+** Check if queue is working.
 
 * Problem with new experimental API
 ** there is an issue if user invokes multiple tasks in thread pool directly from one of the worker
