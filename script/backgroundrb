@@ -46,20 +46,24 @@ when 'start'
     BackgrounDRb::MasterProxy.new()
   end
 when 'stop'
-  pid = nil
-  File.open(pid_file, "r") { |pid_handle| pid = pid_handle.gets.strip.chomp.to_i }
-  begin
-    pgid =  Process.getpgid(pid)
-    Process.kill('TERM', pid)
-    Process.kill('-TERM', pgid)
-    Process.kill('KILL', pid)
-  rescue Errno::ESRCH => e
-    puts "Deleting pid file"
-  rescue
-    puts $!
-  ensure
-    File.delete(pid_file) if File.exists?(pid_file)
+  def kill_process arg_pid_file
+    pid = nil
+    File.open(arg_pid_file, "r") { |pid_handle| pid = pid_handle.gets.strip.chomp.to_i }
+    begin
+      pgid =  Process.getpgid(pid)
+      Process.kill('TERM', pid)
+      Process.kill('-TERM', pgid)
+      Process.kill('KILL', pid)
+    rescue Errno::ESRCH => e
+      puts "Deleting pid file"
+    rescue
+      puts $!
+    ensure
+      File.delete(arg_pid_file) if File.exists?(arg_pid_file)
+    end
   end
+  pid_files = Dir["#{RAILS_HOME}/tmp/pids/backgroundrb_*.pid"]
+  pid_files.each { |x| kill_process(x) }
 else
   BackgrounDRb::MasterProxy.new()
 end
