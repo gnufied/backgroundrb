@@ -6,7 +6,7 @@ module BackgrounDRb
     def initialize
       @bdrb_servers = []
       @backend_connections = []
-      initialize_memcache if BDRB_CONFIG[:backgroundrb][:result_storage] == :memcache
+      initialize_memcache if BDRB_CONFIG[:backgroundrb][:result_storage] == 'memcache'
       establish_connections
       @round_robin = (0...@backend_connections.length).to_a
     end

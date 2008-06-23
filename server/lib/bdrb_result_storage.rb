@@ -6,7 +6,7 @@ module BackgrounDRb
       @worker_key = worker_key
       @mutex = Mutex.new
       @storage_type = storage_type
-      @cache = (@storage_type == :memcache) ? memcache_instance : {}
+      @cache = (@storage_type == 'memcache') ? memcache_instance : {}
     end
 
     def memcache_instance
@@ -25,8 +25,9 @@ module BackgrounDRb
     end
 
     def gen_key key
-      if storage_type == :memcache
-        [woker_name,worker_key,key].compact.join('_')
+      if storage_type == 'memcache'
+        key = [worker_name,worker_key,key].compact.join('_')
+        key
       else
         key
       end
