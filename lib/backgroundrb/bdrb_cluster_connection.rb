@@ -3,10 +3,12 @@ module BackgrounDRb
   class ClusterConnection
     include ClientHelper
     attr_accessor :backend_connections,:config,:cache
+    attr_accessor :disconnected_connections
 
     def initialize
       @bdrb_servers = []
       @backend_connections = Packet::DoubleKeyedHash.new
+      @disconnected_connections = Packet::DoubleKeyedHash.new
       initialize_memcache if BDRB_CONFIG[:backgroundrb][:result_storage] == 'memcache'
       establish_connections
       @round_robin = (0...@backend_connections.length).to_a
@@ -84,7 +86,7 @@ module BackgrounDRb
     def all_worker_info
       info_data = {}
       @backend_connections.each do |server_info,t_connection|
-        info_data[server_info] = t_connection.all_worker_info
+        info_data[server_info] = t_connection.all_worker_info rescue nil
       end
       return info_data
     end

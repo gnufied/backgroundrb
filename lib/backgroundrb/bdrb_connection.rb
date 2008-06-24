@@ -1,11 +1,13 @@
 module BackgrounDRb
   class Connection
-    attr_accessor :server_ip,:server_port,:cluster_conn
+    attr_accessor :server_ip,:server_port,:cluster_conn,:connection_status
+
     def initialize ip,port,cluster_conn
       @mutex = Mutex.new
       @server_ip = ip
       @server_port = port
       @cluster_conn = cluster_conn
+      @connection_status = true
     end
 
 
@@ -38,7 +40,7 @@ module BackgrounDRb
           flush_in_loop(data)
         else
           @connection_status = false
-          raise BackgrounDRb::BdrbConnError.new("Error while writing")
+          raise BackgrounDRb::BdrbConnError.new("Error while writing #{server_info}")
         end
       rescue
         establish_connection
@@ -46,7 +48,7 @@ module BackgrounDRb
           flush_in_loop(data)
         else
           @connection_status = false
-          raise BackgrounDRb::BdrbConnError.new("Error while writing")
+          raise BackgrounDRb::BdrbConnError.new("Error while writing #{server_info}")
         end
       end
     end
@@ -69,7 +71,7 @@ module BackgrounDRb
 
     def dump_object data
       establish_connection
-      raise BackgrounDRb::BdrbConnError.new("Error while connecting to the backgroundrb server") unless @connection_status
+      raise BackgrounDRb::BdrbConnError.new("Error while connecting to the backgroundrb server #{server_info}") unless @connection_status
 
       object_dump = Marshal.dump(data)
       dump_length = object_dump.length.to_s
@@ -128,7 +130,7 @@ module BackgrounDRb
         message_data = @connection.read(message_length)
         return message_data
       rescue
-        raise BackgrounDRb::BdrbConnError.new("Not able to connect")
+        raise BackgrounDRb::BdrbConnError.new("Not able to connect #{server_info}")
       end
     end
 
