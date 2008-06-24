@@ -7,8 +7,14 @@ module BackgrounDRb
 
     def initialize
       @bdrb_servers = []
-      @backend_connections = Packet::DoubleKeyedHash.new
-      @disconnected_connections = Packet::DoubleKeyedHash.new
+#       @backend_connections = Packet::DoubleKeyedHash.new
+#       @disconnected_connections = Packet::DoubleKeyedHash.new
+      @backend_connections = []
+      @disconnected_connections = {}
+
+      @last_polled_time = Time.now
+      @request_count = 0
+
       initialize_memcache if BDRB_CONFIG[:backgroundrb][:result_storage] == 'memcache'
       establish_connections
       @round_robin = (0...@backend_connections.length).to_a
@@ -41,17 +47,59 @@ module BackgrounDRb
         @bdrb_servers << OpenStruct.new(:ip => BDRB_CONFIG[:backgroundrb][:ip],:port => BDRB_CONFIG[:backgroundrb][:port].to_i)
       end
       @bdrb_servers.each_with_index do |connection_info,index|
-        t_connection = Connection.new(connection_info.ip,connection_info.port,self)
-        @backend_connections[t_connection.server_info,index] = t_connection
+        #t_connection = Connection.new(connection_info.ip,connection_info.port,self)
+        # @backend_connections[t_connection.server_info,index] = t_connection
+        @backend_connections << Connection.new(connection_info.ip,connection_info.port,self)
       end
     end # end of method establish_connections
 
+    # every 10 request or 10 seconds it will try to reconnect to bdrb servers which were down
+    def discover_server_periodically
+      @disconnected_connections.each do |key,connection|
+        connection.establish_connection
+        if connection.connection_status
+          @backend_connections << connection
+          connection.close_connection
+          @disconnected_connections[key] = nil
+        end
+      end
+      @disconnected_connections.delete_if { |key,value| value.nil? }
+      @round_robin = (0...@backend_connections.length).to_a
+    end
+
+    def find_next_except_these connections
+      invalid_connections = @backend_connections.delete_if { |x| connections.include?(x.server_info) }
+      @round_robin = (0...@backend_connections.length).to_a
+      invalid_connections.each do |x|
+        @disconnected_connections[x.server_info] = x
+      end
+      chosen = @backend_connections.detect { |x| !(connections.include?(x.server_info)) }
+      raise NoServerAvailable.new("No BackgrounDRb server is found running") unless chosen
+      chosen
+    end
+
     def worker(worker_name,worker_key = nil)
-      if worker_key
-        return find_among_cluster worker_name,worker_key
+#       if worker_key
+#         return find_among_cluster worker_name,worker_key
+#       else
+#         chosen = choose_server
+#         chosen.worker(worker_name,worker_key)
+#       end
+      update_stats
+      RailsWorkerProxy.new(worker_name,worker_key,self)
+    end
+
+    def update_stats
+      @request_count += 1
+      discover_server_periodically if time_to_discover?
+    end
+
+    def time_to_discover?
+      if((@request_count%10 == 0) or (Time.now > (@last_polled_time + 10.seconds)))
+        @last_polled_time = Time.now
+        return true
       else
-        chosen = choose_server
-        chosen.worker(worker_name,worker_key)
+        return false
       end
     end
 
@@ -84,25 +132,47 @@ module BackgrounDRb
     end
 
     def all_worker_info
+      update_stats
       info_data = {}
-      @backend_connections.each do |server_info,t_connection|
-        info_data[server_info] = t_connection.all_worker_info rescue nil
+      @backend_connections.each do |t_connection|
+        info_data[t_connection.server_info] = t_connection.all_worker_info rescue nil
       end
       return info_data
     end
 
     # one of the backend connections are chosen and worker is started on it
     def new_worker options = {}
-      chosen = choose_server
-      t_key = gen_worker_key(options[:worker],options[:worker_key])
-      @cached_new_workers[t_key] ||= []
-      @cached_new_workers[t_key] << chosen.server_info
-      chosen.new_worker(options)
+      update_stats
+      #chosen = choose_server
+      #       t_key = gen_worker_key(options[:worker],options[:worker_key])
+      #       @cached_new_workers[t_key] ||= []
+      #       @cached_new_workers[t_key] << chosen.server_info
+      #       tried_connections = [chosen]
+      #       begin
+      #         chosen.new_worker(options)
+      #       rescue BdrbConnError => e
+      #         chosen = find_next_except_these(tried_connections)
+      #         tried_connections << chosen
+      #         retry
+      #       end
+      # Should succeed on at least one
+      succeeded = false
+      @backend_connections.each do |connection|
+        begin
+          connection.new_worker(options)
+          succeeded = true
+        rescue BdrbConnError; end
+      end
+      raise NoServerAvailable.new("No BackgrounDRb server is found running") unless succeeded
     end
 
     def choose_server
       if @round_robin.empty?
         @round_robin = (0...@backend_connections.length).to_a
+      end
+      if @round_robin.empty? && @backend_connections.empty?
+        discover_server_periodically
+        raise NoServerAvailable.new("No BackgrounDRb server is found running") if @round_robin.empty? && @backend_connections.empty?
       end
       @backend_connections[@round_robin.shift]
     end

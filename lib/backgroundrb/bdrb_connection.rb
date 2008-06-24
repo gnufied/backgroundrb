@@ -11,9 +11,9 @@ module BackgrounDRb
     end
 
 
-    def worker(worker_name,worker_key = nil)
-      RailsWorkerProxy.worker(worker_name,worker_key,self)
-    end
+#     def worker(worker_name,worker_key = nil)
+#       RailsWorkerProxy.worker(worker_name,worker_key,self)
+#     end
 
     def establish_connection
       begin
