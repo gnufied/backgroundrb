@@ -46,7 +46,7 @@ module BackgrounDRb
 
     def worker(worker_name,worker_key = nil)
       if worker_key
-        return find_among_cluster
+        return find_among_cluster worker_name,worker_key
       else
         chosen = choose_server
         chosen.worker(worker_name,worker_key)
