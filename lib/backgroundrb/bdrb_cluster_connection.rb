@@ -7,8 +7,6 @@ module BackgrounDRb
 
     def initialize
       @bdrb_servers = []
-#       @backend_connections = Packet::DoubleKeyedHash.new
-#       @disconnected_connections = Packet::DoubleKeyedHash.new
       @backend_connections = []
       @disconnected_connections = {}
 
@@ -47,8 +45,6 @@ module BackgrounDRb
         @bdrb_servers << OpenStruct.new(:ip => BDRB_CONFIG[:backgroundrb][:ip],:port => BDRB_CONFIG[:backgroundrb][:port].to_i)
       end
       @bdrb_servers.each_with_index do |connection_info,index|
-        #t_connection = Connection.new(connection_info.ip,connection_info.port,self)
-        # @backend_connections[t_connection.server_info,index] = t_connection
         @backend_connections << Connection.new(connection_info.ip,connection_info.port,self)
       end
     end # end of method establish_connections
@@ -79,12 +75,6 @@ module BackgrounDRb
     end
 
     def worker(worker_name,worker_key = nil)
-#       if worker_key
-#         return find_among_cluster worker_name,worker_key
-#       else
-#         chosen = choose_server
-#         chosen.worker(worker_name,worker_key)
-#       end
       update_stats
       RailsWorkerProxy.new(worker_name,worker_key,self)
     end
@@ -103,34 +93,6 @@ module BackgrounDRb
       end
     end
 
-    def find_among_cluster worker_name,worker_key
-      t_key = gen_worker_key(worker_name,worker_key)
-      if chosen_worker = delegate_to_new_worker(t_key)
-        return chosen_worker
-      else
-        refresh_new_worker_cache
-        return delegate_to_new_worker(t_key)
-      end
-    end
-
-    def delegate_to_new_worker key
-      t_connections = @cached_new_workers[t_key]
-      return nil if t_connections.blank?
-      first_connection = @backend_connections[t_connections[0]]
-      first_connection.worker(worker_name,worker_key)
-    end
-
-    def refresh_new_worker_cache
-      info_data = all_worker_info
-      info_data.each do |key,value|
-        value.each do |worker_status|
-          next if worker_status[:worker_key].nil? or worker_status[:worker_key].empty?
-          @cached_new_workers[worker_status[:worker_key]] ||= []
-          @cached_new_workers[worker_status[:worker_key]] << key
-        end
-      end
-    end
-
     def all_worker_info
       update_stats
       info_data = {}
@@ -143,19 +105,6 @@ module BackgrounDRb
     # one of the backend connections are chosen and worker is started on it
     def new_worker options = {}
       update_stats
-      #chosen = choose_server
-      #       t_key = gen_worker_key(options[:worker],options[:worker_key])
-      #       @cached_new_workers[t_key] ||= []
-      #       @cached_new_workers[t_key] << chosen.server_info
-      #       tried_connections = [chosen]
-      #       begin
-      #         chosen.new_worker(options)
-      #       rescue BdrbConnError => e
-      #         chosen = find_next_except_these(tried_connections)
-      #         tried_connections << chosen
-      #         retry
-      #       end
-      # Should succeed on at least one
       succeeded = false
       @backend_connections.each do |connection|
         begin

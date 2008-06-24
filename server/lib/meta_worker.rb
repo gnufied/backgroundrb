@@ -169,7 +169,6 @@ module BackgrounDRb
     def process_request(p_data)
       user_input = p_data[:data]
       if (user_input[:worker_method]).nil? or !respond_to?(user_input[:worker_method])
-        p user_input[:worker_method]
         result = nil
         send_response(p_data,result)
         return
@@ -264,7 +263,6 @@ module BackgrounDRb
 
     def check_for_timer_events
       super
-      #check_for_enqueued_tasks
       return if @worker_method_triggers.nil? or @worker_method_triggers.empty?
       @worker_method_triggers.delete_if { |key,value| value[:trigger].respond_to?(:end_time) && value[:trigger].end_time <= Time.now }
 
