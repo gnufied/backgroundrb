@@ -21,122 +21,6 @@ module BackgrounDRb
       @worker.send_request(:worker => :log_worker, :data => p_data)
     end
   end
-
-  class WorkData
-    attr_accessor :data,:block
-    def initialize(args,&block)
-      @data = args
-      @block = block
-    end
-  end
-
-  class ParallelData
-    attr_accessor :data,:block,:response_block,:guid
-    def initialize(args,block,response_block)
-      @data = args
-      @block = block
-      @response_block = response_block
-      @guid = Packet::Guid.hexdigest
-    end
-  end
-
-  class ResultData
-    attr_accessor :data,:block
-    def initialize args,&block
-      @data = args
-      @block = block
-    end
-  end
-
-  class ThreadPool
-    attr_accessor :size,:threads,:work_queue,:logger
-    attr_accessor :result_queue
-    def initialize(size,logger)
-      @logger = logger
-      @size = size
-      @threads = []
-      @work_queue = Queue.new
-      @running_tasks = Queue.new
-      @result_queue = Queue.new
-      @size.times { add_thread }
-    end
-
-    # can be used to make a call in threaded manner
-    # passed block runs in a thread from thread pool
-    # for example in a worker method you can do:
-    #   def fetch_url(url)
-    #     puts "fetching url #{url}"
-    #     thread_pool.defer(url) do |url|
-    #       begin
-    #         data = Net::HTTP.get(url,'/')
-    #         File.open("#{RAILS_ROOT}/log/pages.txt","w") do |fl|
-    #           fl.puts(data)
-    #         end
-    #       rescue
-    #         logger.info "Error downloading page"
-    #       end
-    #     end
-    #   end
-    # you can invoke above method from rails as:
-    #   MiddleMan.ask_work(:worker => :rss_worker, :worker_method => :fetch_url, :data => "www.example.com")
-    # assuming method is defined in rss_worker
-
-    def defer(*args,&block)
-      @work_queue << WorkData.new(args,&block)
-    end
-
-    def fetch_parallely(args,process_block,response_block)
-      @work_queue << ParallelData.new(args,process_block,response_block)
-    end
-
-    def add_thread
-      @threads << Thread.new do
-        while true
-          task = @work_queue.pop
-          @running_tasks << task
-          block_result = run_task(task)
-          if task.is_a? ParallelData
-            @result_queue << ResultData.new(block_result,&task.response_block)
-          end
-          @running_tasks.pop
-        end
-      end
-    end
-
-    def result_empty?
-      return true if @result_queue.empty?
-      return false
-    end
-
-    def result_pop
-      @result_queue.pop
-    end
-
-    def run_task task
-      block_arity = task.block.arity
-      begin
-        ActiveRecord::Base.verify_active_connections!
-        result = (block_arity == 0 ? task.block.call : task.block.call(*(task.data)))
-        return result
-      rescue
-        logger.info($!.to_s)
-        logger.info($!.backtrace.join("\n"))
-        return nil
-      end
-    end
-
-    # method ensures exclusive run of deferred tasks for 2 seconds, so as they do get a chance to run.
-    def exclusive_run
-      if @running_tasks.empty? && @work_queue.empty?
-        return
-      else
-        # puts "going to sleep for a while"
-        sleep(0.05)
-        return
-      end
-    end
-  end
-
   # == MetaWorker class
   # BackgrounDRb workers are asynchrounous reactors which work using events
   # You are free to use threads in your workers, but be reasonable with them.
@@ -202,7 +86,7 @@ module BackgrounDRb
   class MetaWorker < Packet::Worker
     include BackgrounDRb::BdrbServerHelper
     attr_accessor :config_file, :my_schedule, :run_time, :trigger_type, :trigger
-    attr_accessor :logger, :thread_pool
+    attr_accessor :logger, :thread_pool,:cache
     iattr_accessor :pool_size
     iattr_accessor :reload_flag
 
@@ -226,8 +110,12 @@ module BackgrounDRb
     def worker_init
       @config_file = BackgrounDRb::Config.read_config("#{RAILS_HOME}/config/backgroundrb.yml")
       log_flag = @config_file[:backgroundrb][:debug_log].nil? ? true : @config_file[:backgroundrb][:debug_load_rails_env]
+
+      # stores the job key of currently running job
+      Thread.current[:job_key] = nil
       @logger = PacketLogger.new(self,log_flag)
       @thread_pool = ThreadPool.new(pool_size || 20,@logger)
+      @cache = ResultStorage.new(worker_name,worker_options[:worker_key],BDRB_CONFIG[:backgroundrb][:result_storage])
 
       if(worker_options && worker_options[:schedule] && no_auto_load)
         load_schedule_from_args
@@ -239,9 +127,11 @@ module BackgrounDRb
         create_arity = method(:create).arity
         (create_arity == 0) ? create : create(worker_options[:data])
       end
-      @logger.info "#{worker_name} started"
-      @logger.info "Schedules for worker loaded"
+      add_periodic_timer(1) { check_for_enqueued_tasks }
     end
+
+    def job_key; Thread.current[:job_key]; end
+    def worker_key; worker_options[:worker_key]; end
 
     # loads workers schedule from options supplied from rails
     # a user may pass trigger arguments to dynamically define the schedule
@@ -261,31 +151,42 @@ module BackgrounDRb
     def receive_data p_data
       if p_data[:data][:worker_method] == :exit
         exit
-        return
       end
       case p_data[:type]
       when :request: process_request(p_data)
       when :response: process_response(p_data)
+      when :get_result: return_result_object(p_data)
       end
+    end
+
+    def return_result_object p_data
+      user_input = p_data[:data]
+      user_job_key = user_input[:job_key]
+      send_response(p_data,cache[user_job_key])
     end
 
     # method is responsible for invoking appropriate method in user
     def process_request(p_data)
       user_input = p_data[:data]
-      logger.info "#{user_input[:worker_method]} #{user_input[:data]}"
       if (user_input[:worker_method]).nil? or !respond_to?(user_input[:worker_method])
-        logger.info "Undefined method #{user_input[:worker_method]} called on worker #{worker_name}"
+        result = nil
+        send_response(p_data,result)
         return
       end
+
       called_method_arity = self.method(user_input[:worker_method]).arity
       result = nil
+
+      Thread.current[:job_key] = user_input[:job_key]
+
       if called_method_arity != 0
-        result = self.send(user_input[:worker_method],user_input[:data])
+        result = self.send(user_input[:worker_method],*user_input[:arg])
       else
         result = self.send(user_input[:worker_method])
       end
+
       if p_data[:result]
-        result = "dummy_result" unless result
+        result = "dummy_result" if result.nil?
         send_response(p_data,result) if can_dump?(result)
       end
     end
@@ -309,29 +210,11 @@ module BackgrounDRb
         when String
           cron_args = value[:trigger_args] || "0 0 0 0 0"
           trigger = BackgrounDRb::CronTrigger.new(cron_args)
+          @worker_method_triggers[key] = { :trigger => trigger,:data => value[:data],:runtime => trigger.fire_after_time(Time.now).to_i }
         when Hash
           trigger = BackgrounDRb::Trigger.new(value[:trigger_args])
+          @worker_method_triggers[key] = { :trigger => trigger,:data => value[:trigger_args][:data],:runtime => trigger.fire_after_time(Time.now).to_i }
         end
-        @worker_method_triggers[key] = { :trigger => trigger,:data => value[:data],:runtime => trigger.fire_after_time(Time.now).to_i }
-      end
-    end
-
-    # probably this method should be made thread safe, so as a method needs to have a
-    # lock or something before it can use the method
-    def register_status p_data
-      status = {:type => :status,:data => p_data}
-      begin
-        send_data(status)
-      rescue TypeError => e
-        status = {:type => :status,:data => "invalid_status_dump_check_log"}
-        send_data(status)
-        logger.info(e.to_s)
-        logger.info(e.backtrace.join("\n"))
-      rescue
-        status = {:type => :status,:data => "invalid_status_dump_check_log"}
-        send_data(status)
-        logger.info($!.to_s)
-        logger.info($!.backtrace.join("\n"))
       end
     end
 
@@ -358,42 +241,53 @@ module BackgrounDRb
 
     def connection_completed; end
 
-    def check_for_thread_responses
-      10.times do
-        break if thread_pool.result_empty?
-        result_object = thread_pool.result_pop
-        (result_object.block).call(result_object.data)
+    def check_for_enqueued_tasks
+      if worker_key && !worker_key.empty?
+        task = BdrbJobQueue.find_next(worker_name.to_s,worker_key.to_s)
+      else
+        task = BdrbJobQueue.find_next(worker_name.to_s)
+      end
+      return unless task
+      if self.respond_to? task.worker_method
+        called_method_arity = self.method(task.worker_method).arity
+        args = load_data(task.args)
+        if called_method_arity != 0
+          self.send(task.worker_method,*args)
+        else
+          self.send(task.worker_method)
+        end
+      else
+        task.release_job
       end
     end
 
     def check_for_timer_events
-      check_for_thread_responses
-
-      begin
-        ActiveRecord::Base.verify_active_connections! if defined?(ActiveRecord)
-        super
-      rescue
-        logger.info($!.to_s)
-        logger.info($!.backtrace.join("\n"))
-      end
-
+      super
       return if @worker_method_triggers.nil? or @worker_method_triggers.empty?
       @worker_method_triggers.delete_if { |key,value| value[:trigger].respond_to?(:end_time) && value[:trigger].end_time <= Time.now }
 
       @worker_method_triggers.each do |key,value|
         time_now = Time.now.to_i
         if value[:runtime] < time_now
+          check_db_connection
           begin
             (t_data = value[:data]) ? send(key,t_data) : send(key)
           rescue
-            # logger.info($!.to_s)
-            # logger.info($!.backtrace.join("\n"))
-            puts $!
-            puts $!.backtrace
+            logger.info($!.to_s)
+            logger.info($!.backtrace.join("\n"))
           end
           t_time = value[:trigger].fire_after_time(Time.now)
           value[:runtime] = t_time.to_i
         end
+      end
+    end
+
+    def check_db_connection
+      begin
+        ActiveRecord::Base.verify_active_connections! if defined?(ActiveRecord)
+      rescue
+        logger.info($!.to_s)
+        logger.info($!.backtrace.join("\n"))
       end
     end
 
@@ -405,11 +299,7 @@ module BackgrounDRb
     private
     def load_rails_env
       db_config_file = YAML.load(ERB.new(IO.read("#{RAILS_HOME}/config/database.yml")).result)
-      #run_env = @config_file[:backgroundrb][:environment] || 'development'
-      #ENV["RAILS_ENV"] = run_env
       run_env = ENV["RAILS_ENV"]
-      #require RAILS_HOME + "/config/environment"
-      #RAILS_ENV.replace(run_env) if defined?(RAILS_ENV)
       ActiveRecord::Base.establish_connection(db_config_file[run_env])
       ActiveRecord::Base.allow_concurrency = true
     end

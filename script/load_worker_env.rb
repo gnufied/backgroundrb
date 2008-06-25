@@ -15,7 +15,15 @@ require "bdrb_config"
 require RAILS_HOME + "/config/boot"
 require "active_support"
 
-CONFIG_FILE = BackgrounDRb::Config.read_config("#{RAILS_HOME}/config/backgroundrb.yml")
+if !(::Packet::WorkerRunner::WORKER_OPTIONS[:worker_env] == false)
+  require RAILS_HOME + "/config/boot"
+  require "active_support"
+  BDRB_CONFIG = BackgrounDRb::Config.read_config("#{RAILS_HOME}/config/backgroundrb.yml")
+  require RAILS_HOME + "/config/environment"
+else
+  BDRB_CONFIG = BackgrounDRb::Config.read_config("#{RAILS_HOME}/config/backgroundrb.yml")
+end
+
 
 require "backgroundrb_server"
-require RAILS_HOME + "/config/environment"
+

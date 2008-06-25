@@ -1,4 +1,41 @@
 namespace :backgroundrb do
+  def setup_queue_migration
+    config_file = "#{RAILS_ROOT}/config/database.yml"
+    require "erb"
+    require "active_record"
+    config = YAML.load(ERB.new(IO.read(config_file)).result)
+    env = ENV["env"] || 'development'
+    ActiveRecord::Base.establish_connection(config[env])
+
+    table_creation =<<-EOD
+      create table bdrb_job_queues(
+        id integer not null auto_increment primary key,
+        args               blob,
+        worker_name        varchar(255),
+        worker_method      varchar(255),
+        job_key            varchar(255),
+        taken              tinyint,
+        finished           tinyint,
+        timeout            int,
+        priority           int,
+        submitted_at       datetime,
+        started_at         datetime,
+        finished_at        datetime,
+        archived_at        datetime,
+        tag                varchar(255),
+        submitter_info     varchar(255),
+        runner_info        varchar(255),
+        worker_key         varchar(255)
+      ) ENGINE=InnoDB;
+    EOD
+    connection = ActiveRecord::Base.connection
+    begin
+      connection.execute(table_creation)
+    rescue ActiveRecord::StatementInvalid => e
+      #puts e.message
+    end
+  end
+
   require 'yaml'
   desc 'Setup backgroundrb in your rails application'
   task :setup do
@@ -40,6 +77,7 @@ namespace :backgroundrb do
       puts "Copying Worker envionment loader file #{worker_env_loader_dest}"
       FileUtils.cp_r(worker_env_loader_src,worker_env_loader_dest)
     end
+    setup_queue_migration
   end
 
   desc 'Remove backgroundrb from your rails application'
