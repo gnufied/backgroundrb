@@ -309,10 +309,11 @@ module BackgrounDRb
         when String
           cron_args = value[:trigger_args] || "0 0 0 0 0"
           trigger = BackgrounDRb::CronTrigger.new(cron_args)
+          @worker_method_triggers[key] = { :trigger => trigger,:data => value[:data],:runtime => trigger.fire_after_time(Time.now).to_i }
         when Hash
           trigger = BackgrounDRb::Trigger.new(value[:trigger_args])
+          @worker_method_triggers[key] = { :trigger => trigger,:data => value[:trigger_args][:data],:runtime => trigger.fire_after_time(Time.now).to_i }
         end
-        @worker_method_triggers[key] = { :trigger => trigger,:data => value[:data],:runtime => trigger.fire_after_time(Time.now).to_i }
       end
     end
 
