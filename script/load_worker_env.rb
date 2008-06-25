@@ -12,6 +12,8 @@ require "erb"
 require "logger"
 require "optparse"
 require "bdrb_config"
+require RAILS_HOME + "/config/boot"
+require "active_support"
 
 CONFIG_FILE = BackgrounDRb::Config.read_config("#{RAILS_HOME}/config/backgroundrb.yml")
 
