@@ -1,6 +1,6 @@
 module BackgrounDRb
   class WorkData
-    attr_accessor :data,:block
+    attr_accessor :data,:block,:job_key
     def initialize(args,job_key,&block)
       @data = args
       @job_key = job_key
