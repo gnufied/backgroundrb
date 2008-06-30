@@ -12,6 +12,8 @@ require "erb"
 require "logger"
 require "optparse"
 require "bdrb_config"
+require RAILS_HOME + "/config/boot"
+require "active_support"
 
 if !(::Packet::WorkerRunner::WORKER_OPTIONS[:worker_env] == false)
   require RAILS_HOME + "/config/boot"
