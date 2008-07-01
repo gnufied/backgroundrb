@@ -260,4 +260,22 @@ context "Cront Trigger in general" do
     firetime.day.should == 14
     firetime.month.should == 2
   end
+
+  specify "should run for weekdays " do
+    t_time = Time.parse("Wed Feb 13 20:53:43 +0530 2008")
+    a = BackgrounDRb::CronTrigger.new("0 0 2 * * 1-5 *")
+    firetime = a.fire_after_time(t_time)
+    firetime.hour.should == 2
+    firetime.min.should == 0
+    firetime.sec.should == 0
+    firetime.wday.should == 4
+
+    t_time = Time.parse("Fri June 6 20:53:43 +0530 2008")
+    a = BackgrounDRb::CronTrigger.new("0 0 2 * * 1-5 *")
+    firetime = a.fire_after_time(t_time)
+    firetime.hour.should == 2
+    firetime.min.should == 0
+    firetime.sec.should == 0
+    firetime.wday.should == 1
+  end
 end
