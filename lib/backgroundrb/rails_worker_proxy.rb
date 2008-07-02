@@ -11,10 +11,13 @@ module BackgrounDRb
 
     def method_missing(method_id,*args)
       worker_method = method_id
-      data = args
+      arguments = *args
+
       result = nil
-      connection = middle_man.choose_server
+
+      connection = (Hash === arguments ) ? middle_man.choose_server(arguments[:host]) : middle_man.choose_server
       @tried_connections << connection.server_info
+
       begin
         result = invoke_on_connection(connection,worker_method,data)
       rescue BdrbConnError => e

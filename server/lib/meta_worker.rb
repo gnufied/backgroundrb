@@ -114,7 +114,7 @@ module BackgrounDRb
       # stores the job key of currently running job
       Thread.current[:job_key] = nil
       @logger = PacketLogger.new(self,log_flag)
-      @thread_pool = ThreadPool.new(pool_size || 20,@logger)
+      @thread_pool = ThreadPool.new(self,pool_size || 20,@logger)
       @cache = ResultStorage.new(worker_name,worker_options[:worker_key],BDRB_CONFIG[:backgroundrb][:result_storage])
 
       if(worker_options && worker_options[:schedule] && no_auto_load)
