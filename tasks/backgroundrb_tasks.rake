@@ -80,9 +80,26 @@ namespace :backgroundrb do
     setup_queue_migration
   end
 
+  desc 'update backgroundrb config files from your rails application'
+  task :update do
+    temp_scripts = ["backgroundrb","load_worker_env.rb"].map {|x| "#{RAILS_ROOT}/script/#{x}"}
+    temp_scripts.each do |file_name|
+      if File.exists?(file_name)
+        puts "Removing #{file_name} ..."
+        FileUtils.rm(file_name,:force => true)
+      end
+    end
+    new_temp_scripts = ["backgroundrb","load_worker_env.rb"].map {|x| File.dirname(__FILE__) + "/../script/#{x}" }
+    new_temp_scripts.each do |file_name|
+      puts "Updating file #{File.expand_path(file_name)} ..."
+      FileUtils.cp_r(file_name,"#{RAILS_ROOT}/script/")
+    end
+  end
+
   desc 'Remove backgroundrb from your rails application'
   task :remove do
     script_src = "#{RAILS_ROOT}/script/backgroundrb"
+    temp_scripts = ["backgroundrb","load_worker_env.rb"].map {|x| "#{RAILS_ROOT}/script/#{x}"}
 
     if File.exists?(script_src)
         puts "Removing #{script_src} ..."

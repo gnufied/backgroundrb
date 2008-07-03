@@ -74,6 +74,16 @@ module BackgrounDRb
       chosen
     end
 
+    def find_connection host_info
+      conn = @backend_connections.detect { |x| x.server_info == host_info }
+      raise NoServerAvailable.new("BackgrounDRb server is not found running on #{host_info}") unless conn
+      return conn
+    end
+
+    def find_local
+      find_connection("#{BDRB_CONFIG[:backgroundrb][:ip]}:#{BDRB_CONFIG[:backgroundrb][:port]}")
+    end
+
     def worker(worker_name,worker_key = nil)
       update_stats
       RailsWorkerProxy.new(worker_name,worker_key,self)
@@ -115,14 +125,7 @@ module BackgrounDRb
       raise NoServerAvailable.new("No BackgrounDRb server is found running") unless succeeded
     end
 
-    def choose_server(host_info = nil)
-      if host_info
-        return @backend_connections if host_info == :all
-        conn = @backend_connections.detect { |x| x.server_info == host_info }
-        raise NoServerAvailable.new("BackgrounDRb server is not found running on #{host_info}") unless conn
-        return conn
-      end
-
+    def choose_server
       if @round_robin.empty?
         @round_robin = (0...@backend_connections.length).to_a
       end

@@ -11,48 +11,102 @@ module BackgrounDRb
 
     def method_missing(method_id,*args)
       worker_method = method_id
-      arguments = *args
+      arguments = arguments.first
 
-      result = nil
+      arg,job_key,host_info = arguments && arguments.values_at(:arg,:job_key,:host)
 
-      connection = (Hash === arguments ) ? middle_man.choose_server(arguments[:host]) : middle_man.choose_server
-      @tried_connections << connection.server_info
-
-      begin
-        result = invoke_on_connection(connection,worker_method,data)
-      rescue BdrbConnError => e
-        connection = middle_man.find_next_except_these(@tried_connections)
-        @tried_connections << connection.server_info
-        retry
-      end
-    end
-
-    def invoke_on_connection connection,worker_method,data
-      raise NoServerAvailable.new("No BackgrounDRb server is found running") unless connection
-      case worker_method
-      when :ask_result
-        connection.ask_result(compact(:worker => worker_name,:worker_key => worker_key,:job_key => data[0]))
-      when :worker_info
-        connection.worker_info(compact(:worker => worker_name,:worker_key => worker_key))
-      when :delete
-        connection.delete_worker(compact(:worker => worker_name, :worker_key => worker_key))
-      else
-        choose_method(worker_method.to_s,data,connection)
-      end
-    end
-
-    def choose_method worker_method,data,connection
-      job_key = data[0]
       if worker_method =~ /^async_(\w+)/
         method_name = $1
-        connection.ask_work(compact(:worker => worker_name,:worker_key => worker_key,:worker_method => method_name,:job_key => job_key, :arg => data[1..-1]))
+        wokrer_options = compact(:worker => worker_name,:worker_key => worker_key,:worker_method => method_name,:job_key => job_key, :arg => arg)
+        run_method(host_info,:ask_work,wokrer_options)
       elsif worker_method =~ /^enq_(\w+)/i
         method_name = $1
-        args = Marshal.dump([data[1]])
-        options = data[2] || {}
-        connection.enqueue_task(compact(:worker_name => worker_name.to_s,:worker_key => worker_key.to_s,:worker_method => method_name.to_s,:job_key => job_key.to_s, :args => args,:timeout => options[:timeout]))
+        args = Marshal.dump(arg)
+        enqueue_task(compact(:worker_name => worker_name.to_s,:worker_key => worker_key.to_s,:worker_method => method_name.to_s,:job_key => job_key.to_s, :args => args,:timeout => data[:timeout]))
       else
-        connection.send_request(compact(:worker => worker_name,:worker_key => worker_key,:worker_method => worker_method,:job_key => job_key,:arg => data[1..-1]))
+        worker_options = compact(:worker => worker_name,:worker_key => worker_key,:worker_method => worker_method,:job_key => job_key,:arg => arg)
+        run_method(host_info,:send_request,worker_options)
+      end
+    end
+
+    def enqueue_task options = {}
+      BdrbJobQueue.insert_job(options)
+    end
+
+    def run_method host_info,method_name,worker_options = {}
+      result = []
+      connection = choose_connection(host_info)
+      raise NoServerAvailable.new("No BackgrounDRb server is found running") if connection.blank?
+      if host_info == :local or host_info.is_a?(String)
+        result << invoke_on_connection(connection,method_name,worker_options)
+      elsif host_info == :all
+        succeeded = false
+        begin
+          connection.each { |conn| result << invoke_on_connection(connection,method_name,worker_options) }
+          succeeded = true
+        rescue BdrbConnError; end
+        raise NoServerAvailable.new("No BackgrounDRb server is found running") unless succeeded
+      else
+        @tried_connections << connection
+        begin
+          result << invoke_on_connection(connection,method_name,worker_options)
+        rescue BdrbConnError => e
+          connection = middle_man.find_next_except_these(@tried_connections)
+          @tried_connections << connection
+          retry
+        end
+      end
+      return nil if method_name == :ask_work
+      return_result(result)
+    end
+
+    def invoke_on_connection connection,method_name,options = {}
+      raise NoServerAvailable.new("No BackgrounDRb is found running") unless connection
+      connection.send(method_name,options)
+    end
+
+    def ask_result job_key
+      options = compact(:worker => worker_name,:worker_key => worker_key,:job_key => job_key)
+      if BDRB_CONFIG[:backgroundrb][:result_storage] == 'memcache'
+        return_result_from_memcache(options)
+      else
+        result = middle_man.backend_connections.map { |conn| conn.ask_result(options) }
+        return_result(result)
+      end
+    end
+
+    def worker_info
+      t_connections = middle_man.backend_connections
+      result = t_connections.map { |conn| conn.worker_info(compact(:worker => worker_name,:worker_key => worker_key)) }
+      return_result(result)
+    end
+
+    def gen_key options
+      key = [options[:worker],options[:worker_key],options[:job_key]].compact.join('_')
+      key
+    end
+
+    def return_result_from_memcache options = {}
+      middle_man.cache[gen_key(options)]
+    end
+
+    def return_result result
+      result = Array(result)
+      result.size <= 1 ? result[0] : result
+    end
+
+    def delete
+      middle_man.backend_connections.each do |connection|
+        connection.delete_worker(compact(:worker => worker_name, :worker_key => worker_key))
+      end
+    end
+
+    def choose_connection host_info
+      case host_info
+      when :all; middle_man.backend_connections
+      when :local; middle_man.find_local
+      when String; middle_man.find_connection(host_info)
+      else; middle_man.choose_server
       end
     end
 

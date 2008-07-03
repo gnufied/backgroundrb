@@ -70,3 +70,4 @@ when 'stop'
 else
   BackgrounDRb::MasterProxy.new()
 end
+
