@@ -10,19 +10,23 @@ module BackgrounDRb
     end
 
     def method_missing(method_id,*args)
-      worker_method = method_id
-      arguments = arguments.first
+      worker_method = method_id.to_s
+      arguments = args.first
 
       arg,job_key,host_info = arguments && arguments.values_at(:arg,:job_key,:host)
 
       if worker_method =~ /^async_(\w+)/
+        puts "i am here"
         method_name = $1
         wokrer_options = compact(:worker => worker_name,:worker_key => worker_key,:worker_method => method_name,:job_key => job_key, :arg => arg)
         run_method(host_info,:ask_work,wokrer_options)
       elsif worker_method =~ /^enq_(\w+)/i
+        raise NoJobKey.new("Must specify a job key with enqueued tasks") if job_key.blank?
         method_name = $1
-        args = Marshal.dump(arg)
-        enqueue_task(compact(:worker_name => worker_name.to_s,:worker_key => worker_key.to_s,:worker_method => method_name.to_s,:job_key => job_key.to_s, :args => args,:timeout => data[:timeout]))
+        marshalled_args = Marshal.dump(arg)
+        enqueue_task(compact(:worker_name => worker_name.to_s,:worker_key => worker_key.to_s,
+                             :worker_method => method_name.to_s,:job_key => job_key.to_s,
+                             :args => marshalled_args,:timeout => arguments ? arguments[:timeout] : nil))
       else
         worker_options = compact(:worker => worker_name,:worker_key => worker_key,:worker_method => worker_method,:job_key => job_key,:arg => arg)
         run_method(host_info,:send_request,worker_options)
@@ -47,7 +51,7 @@ module BackgrounDRb
         rescue BdrbConnError; end
         raise NoServerAvailable.new("No BackgrounDRb server is found running") unless succeeded
       else
-        @tried_connections << connection
+        @tried_connections = connection
         begin
           result << invoke_on_connection(connection,method_name,worker_options)
         rescue BdrbConnError => e

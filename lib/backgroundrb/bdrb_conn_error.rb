@@ -11,4 +11,6 @@ module BackgrounDRb
       @message = message
     end
   end
+
+  class NoJobKey < RuntimeError; end
 end
