@@ -17,7 +17,8 @@ module BackgrounDRb
 
       if worker_method =~ /^async_(\w+)/
         method_name = $1
-        wokrer_options = compact(:worker => worker_name,:worker_key => worker_key,:worker_method => method_name,:job_key => job_key, :arg => arg)
+        wokrer_options = compact(:worker => worker_name,:worker_key => worker_key,
+                                 :worker_method => method_name,:job_key => job_key, :arg => arg)
         run_method(host_info,:ask_work,wokrer_options)
       elsif worker_method =~ /^enq_(\w+)/i
         raise NoJobKey.new("Must specify a job key with enqueued tasks") if job_key.blank?
@@ -27,7 +28,8 @@ module BackgrounDRb
                              :worker_method => method_name.to_s,:job_key => job_key.to_s,
                              :args => marshalled_args,:timeout => arguments ? arguments[:timeout] : nil))
       else
-        worker_options = compact(:worker => worker_name,:worker_key => worker_key,:worker_method => worker_method,:job_key => job_key,:arg => arg)
+        worker_options = compact(:worker => worker_name,:worker_key => worker_key,
+                                 :worker_method => worker_method,:job_key => job_key,:arg => arg)
         run_method(host_info,:send_request,worker_options)
       end
     end
