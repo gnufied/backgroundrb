@@ -86,7 +86,6 @@ module BackgrounDRb
     end
 
     def ask_work p_data
-      p p_data
       p_data[:type] = :async_invoke
       dump_object(p_data)
       close_connection

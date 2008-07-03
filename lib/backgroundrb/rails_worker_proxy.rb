@@ -16,7 +16,6 @@ module BackgrounDRb
       arg,job_key,host_info = arguments && arguments.values_at(:arg,:job_key,:host)
 
       if worker_method =~ /^async_(\w+)/
-        puts "i am here"
         method_name = $1
         wokrer_options = compact(:worker => worker_name,:worker_key => worker_key,:worker_method => method_name,:job_key => job_key, :arg => arg)
         run_method(host_info,:ask_work,wokrer_options)
@@ -51,12 +50,12 @@ module BackgrounDRb
         rescue BdrbConnError; end
         raise NoServerAvailable.new("No BackgrounDRb server is found running") unless succeeded
       else
-        @tried_connections = connection
+        @tried_connections = [connection.server_info]
         begin
           result << invoke_on_connection(connection,method_name,worker_options)
         rescue BdrbConnError => e
           connection = middle_man.find_next_except_these(@tried_connections)
-          @tried_connections << connection
+          @tried_connections << connection.server_info
           retry
         end
       end
