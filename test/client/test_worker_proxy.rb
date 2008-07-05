@@ -46,14 +46,10 @@ context "Worker Proxy in general" do
 
   specify "should let you run async tasks" do
     actual_conn = mock()
+    actual_conn.expects(:ask_work).with(:arg => :hello,:worker => :hello_worker,:worker_method => 'foobar',:job_key => 'boy').returns(nil)
     @cluster_conn.expects(:find_connection).returns(actual_conn)
-
     @worker_proxy.async_foobar(:arg => :hello,:job_key => "boy",
                                :host => "192.168.2.100:100")
-
-  end
-
-  specify "task invocation should work with local and all host params" do
 
   end
 end

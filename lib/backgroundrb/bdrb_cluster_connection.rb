@@ -2,7 +2,7 @@
 module BackgrounDRb
   class ClusterConnection
     include ClientHelper
-    attr_accessor :backend_connections,:config,:cache
+    attr_accessor :backend_connections,:config,:cache,:bdrb_servers
     attr_accessor :disconnected_connections
 
     def initialize
