@@ -24,7 +24,7 @@ end
 
 desc "RCov"
 Spec::Rake::SpecTask.new('rcov') do |t|
-  t.spec_files = FileList['specs/**/*_spec.rb']
+  t.spec_files = FileList['test/**/test_*.rb']
   t.libs = ['lib', 'server/lib' ]
   t.rcov = true
 end

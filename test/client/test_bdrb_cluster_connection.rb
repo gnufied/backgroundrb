@@ -98,7 +98,8 @@ context "For Cluster connection" do
     @cluster_connection.backend_connections.each do |t_conn|
       t_conn.expects(:all_worker_info).returns(:status => :running)
     end
-    @cluster_connection.all_worker_info
+    foo = @cluster_connection.all_worker_info
+    foo.should == {"0.0.0.0:11008"=>{:status=>:running}, "localhost:11001"=>{:status=>:running}, "localhost:11002"=>{:status=>:running}, "localhost:11003"=>{:status=>:running}}
   end
 end
 
@@ -130,5 +131,38 @@ context "For single connections" do
     @cluster_connection.bdrb_servers.length.should == 1
     @cluster_connection.ivar(:round_robin).length.should == 1
     @cluster_connection.backend_connections[0].server_info.should == "0.0.0.0:11008"
+  end
+end
+
+context "For memcache based result storage" do
+  setup do
+    options = { :schedules =>
+      {
+        :foo_worker => { :barbar=>{:trigger_args=>"*/5 * * * * * *"}}
+      },
+      :backgroundrb =>
+      {
+        :port=>11008, :ip=>"0.0.0.0", :environment=> "production",:result_storage => 'memcache'
+      },
+      :client => "localhost:11001,localhost:11002,localhost:11003",
+      :memcache => "10.0.0.1:11211,10.0.0.2:11211"
+    }
+    BDRB_CONFIG.set(options)
+
+    @cluster_connection = BackgrounDRb::ClusterConnection.new
+    class << @cluster_connection
+      def ivar(var)
+        return instance_variable_get("@#{var}")
+      end
+      def iset(var,value)
+        instance_variable_set("@#{var}",value)
+      end
+    end
+  end
+
+
+  specify "should use memcache based result storage if specified" do
+    @cluster_connection.cache.should.not == nil
+    @cluster_connection.cache.class.should == MemCache
   end
 end

@@ -11,10 +11,6 @@ module BackgrounDRb
     end
 
 
-#     def worker(worker_name,worker_key = nil)
-#       RailsWorkerProxy.worker(worker_name,worker_key,self)
-#     end
-
     def establish_connection
       begin
         timeout(3) do
@@ -156,10 +152,6 @@ module BackgrounDRb
       end
     end
 
-    def return_result_from_memcache options = {}
-      cluster_conn.cache[gen_key(options)]
-    end
-
     def read_from_bdrb(timeout = 3)
       begin
         ret_val = select([@connection],nil,nil,timeout)
@@ -170,10 +162,6 @@ module BackgrounDRb
       rescue
         return nil
       end
-    end
-
-    def enqueue_task options = {}
-      BdrbJobQueue.insert_job(options)
     end
 
     def send_request(p_data)

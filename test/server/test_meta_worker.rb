@@ -15,20 +15,6 @@ context "A Meta Worker should" do
 
     BackgrounDRb::MetaWorker.worker_name = "hello_worker"
 
-    db_config = { :development =>
-      { :adapter => "mysql",:database => "rails_sandbox_development" ,
-        :username => "root",:password => "foobar"
-      },
-      :test => {
-        :adapter => "mysql", :database => "rails_sandbox_test",
-        :username => "root", :password => "foobar",
-      },
-      :production => {
-        :adapter => "mysql", :database => "rails_sandbox_production",
-        :username => "root", :password => "foobar"
-      }
-    }
-
     class BackgrounDRb::MetaWorker
       attr_accessor :outgoing_data
       attr_accessor :incoming_data
