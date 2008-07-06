@@ -15,6 +15,7 @@ context "For Cluster connection" do
     def close_connection
       @connection_status = false
     end
+    def server_info; "#{@server_ip}:#{server_port}"; end
   end
 
   setup do
@@ -92,6 +93,13 @@ context "For Cluster connection" do
       t_conn.expects(:new_worker).with(:worker => :hello_worker,:worker_key => "boy",:data => "boy").returns(true)
     end
     @cluster_connection.new_worker(:worker => :hello_worker,:worker_key => "boy",:data => "boy")
+  end
+
+  specify "should work with all worker info methods" do
+    @cluster_connection.backend_connections.each do |t_conn|
+      t_conn.expects(:all_worker_info).returns(:status => :running)
+    end
+    @cluster_connection.all_worker_info
   end
 end
 
