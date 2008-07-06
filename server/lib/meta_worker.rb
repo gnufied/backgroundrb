@@ -127,7 +127,7 @@ module BackgrounDRb
         create_arity = method(:create).arity
         (create_arity == 0) ? create : create(worker_options[:data])
       end
-      add_periodic_timer(1) { check_for_enqueued_tasks }
+      add_periodic_timer(5) { check_for_enqueued_tasks }
     end
 
     def job_key; Thread.current[:job_key]; end

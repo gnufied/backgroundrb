@@ -34,16 +34,16 @@ module BackgrounDRb
 
     # initialize all backend server connections
     def establish_connections
+      klass = Struct.new(:ip,:port)
       if t_servers = BDRB_CONFIG[:client]
         connections = t_servers.split(',')
         connections.each do |conn_string|
           ip = conn_string.split(':')[0]
           port = conn_string.split(':')[1].to_i
-          @bdrb_servers << OpenStruct.new(:ip => ip,:port => port)
+          @bdrb_servers << klass.new(ip,port)
         end
-      else
-        @bdrb_servers << OpenStruct.new(:ip => BDRB_CONFIG[:backgroundrb][:ip],:port => BDRB_CONFIG[:backgroundrb][:port].to_i)
       end
+      @bdrb_servers << klass.new(BDRB_CONFIG[:backgroundrb][:ip],BDRB_CONFIG[:backgroundrb][:port].to_i)
       @bdrb_servers.each_with_index do |connection_info,index|
         @backend_connections << Connection.new(connection_info.ip,connection_info.port,self)
       end
@@ -64,7 +64,8 @@ module BackgrounDRb
     end
 
     def find_next_except_these connections
-      invalid_connections = @backend_connections.delete_if { |x| connections.include?(x.server_info) }
+      invalid_connections = @backend_connections.select { |x| connections.include?(x.server_info) }
+      @backend_connections.delete_if { |x| connections.include?(x.server_info) }
       @round_robin = (0...@backend_connections.length).to_a
       invalid_connections.each do |x|
         @disconnected_connections[x.server_info] = x
@@ -91,7 +92,7 @@ module BackgrounDRb
 
     def update_stats
       @request_count += 1
-      discover_server_periodically if time_to_discover?
+      discover_server_periodically if(time_to_discover? && !@disconnected_connections.empty?)
     end
 
     def time_to_discover?
@@ -113,7 +114,7 @@ module BackgrounDRb
     end
 
     # one of the backend connections are chosen and worker is started on it
-    def new_worker options = {}
+    def new_worker(options = {})
       update_stats
       succeeded = false
       @backend_connections.each do |connection|

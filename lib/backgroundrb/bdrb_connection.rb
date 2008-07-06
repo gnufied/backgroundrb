@@ -95,7 +95,7 @@ module BackgrounDRb
       p_data[:type] = :start_worker
       dump_object(p_data)
       close_connection
-      RailsWorkerProxy.worker(p_data[:worker],p_data[:worker_key],self)
+      # RailsWorkerProxy.worker(p_data[:worker],p_data[:worker_key],self)
     end
 
     def worker_info(p_data)
