@@ -1,9 +1,13 @@
 require File.join(File.dirname(__FILE__) + "/../bdrb_test_helper")
-require File.join(RAILS_HOME + "/config/environment")
-require "backgroundrb"
+require File.join(File.dirname(__FILE__) + "/../bdrb_client_test_helper")
 
 context "Worker Proxy in general" do
   setup do
+    BDRB_CONFIG.set({:schedules=> {
+                        :foo_worker => { :barbar=>{:trigger_args=>"*/5 * * * * * *"}}},
+                      :backgroundrb=>{:port=>11008, :ip=>"0.0.0.0", :environment=> "production"}
+                    })
+
     @cluster_conn = mock
     @worker_proxy = BackgrounDRb::RailsWorkerProxy.new(:hello_worker,nil,@cluster_conn)
   end

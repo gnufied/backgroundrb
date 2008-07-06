@@ -6,7 +6,10 @@ require "ostruct"
 
 BACKGROUNDRB_ROOT = Pathname.new(RAILS_ROOT).realpath.to_s
 require "backgroundrb/bdrb_config"
-BDRB_CONFIG = BackgrounDRb::Config.read_config("#{BACKGROUNDRB_ROOT}/config/backgroundrb.yml")
+unless defined?(BDRB_CONFIG)
+  puts "fuck"
+  BDRB_CONFIG = BackgrounDRb::Config.read_config("#{BACKGROUNDRB_ROOT}/config/backgroundrb.yml")
+end
 
 require "backgroundrb/bdrb_client_helper"
 require "backgroundrb/bdrb_job_queue"

@@ -1,6 +1,5 @@
 require File.join(File.dirname(__FILE__) + "/../bdrb_test_helper")
-require File.join(RAILS_HOME + "/config/environment")
-require "backgroundrb"
+require File.join(File.dirname(__FILE__) + "/../bdrb_client_test_helper")
 
 context "For Cluster connection" do
   class BackgrounDRb::Connection
@@ -19,11 +18,11 @@ context "For Cluster connection" do
   end
 
   setup do
-    BDRB_CONFIG = {:schedules=> {
+    BDRB_CONFIG.set({:schedules=> {
         :foo_worker => { :barbar=>{:trigger_args=>"*/5 * * * * * *"}}},
       :backgroundrb=>{:port=>11008, :ip=>"0.0.0.0", :environment=> "production"},
       :client => "localhost:11001,localhost:11002,localhost:11003"
-    }
+    })
 
     @cluster_connection = BackgrounDRb::ClusterConnection.new
     class << @cluster_connection
@@ -113,10 +112,10 @@ context "For single connections" do
   end
 
   setup do
-    BDRB_CONFIG = {:schedules=> {
+    BDRB_CONFIG.set({:schedules=> {
         :foo_worker => { :barbar=>{:trigger_args=>"*/5 * * * * * *"}}},
       :backgroundrb=>{:port=>11008, :ip=>"0.0.0.0", :environment=> "production"}
-    }
+    })
 
     @cluster_connection = BackgrounDRb::ClusterConnection.new
     class << @cluster_connection

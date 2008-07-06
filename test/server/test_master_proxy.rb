@@ -2,15 +2,16 @@ require File.join(File.dirname(__FILE__) + "/..","bdrb_test_helper")
 
 context "Master proxy for reloadable workers" do
   ENV["RAILS_ENV"] = "production"
-  BDRB_CONFIG = {:schedules=>
-    {
-      :foo_worker => { :barbar => {:trigger_args=>"*/5 * * * * *", :data =>"Hello World" }},
-      :bar_worker => { :do_job => {:trigger_args=>"*/5 * * * * *", :data =>"Hello World" }}
-    },
-    :backgroundrb=> {:log => "foreground", :debug_log => false, :environment => "production", :port => 11006, :ip => "localhost"}
-  }
 
   setup do
+    BDRB_CONFIG.set({:schedules=>
+                      {
+                        :foo_worker => { :barbar => {:trigger_args=>"*/5 * * * * *", :data =>"Hello World" }},
+                        :bar_worker => { :do_job => {:trigger_args=>"*/5 * * * * *", :data =>"Hello World" }}
+                      },
+                      :backgroundrb=> {:log => "foreground", :debug_log => false, :environment => "production", :port => 11006, :ip => "localhost"}
+                    })
+
     Packet::Reactor.stubs(:run)
     @master_proxy = BackgrounDRb::MasterProxy.new
   end

@@ -4,4 +4,7 @@ class BarWorker < BackgrounDRb::MetaWorker
   def create
 
   end
+  def do_job
+
+  end
 end

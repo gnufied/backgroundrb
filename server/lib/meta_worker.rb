@@ -108,19 +108,20 @@ module BackgrounDRb
     # does initialization of worker stuff and invokes create method in
     # user defined worker class
     def worker_init
-      @config_file = BackgrounDRb::Config.read_config("#{RAILS_HOME}/config/backgroundrb.yml")
-      log_flag = @config_file[:backgroundrb][:debug_log].nil? ? true : @config_file[:backgroundrb][:debug_load_rails_env]
+      log_flag = BDRB_CONFIG[:backgroundrb][:debug_log].nil? ? true : BDRB_CONFIG[:backgroundrb][:debug_load_rails_env]
 
       # stores the job key of currently running job
       Thread.current[:job_key] = nil
       @logger = PacketLogger.new(self,log_flag)
       @thread_pool = ThreadPool.new(self,pool_size || 20,@logger)
-      @cache = ResultStorage.new(worker_name,worker_options[:worker_key],BDRB_CONFIG[:backgroundrb][:result_storage])
+      t_worker_key = worker_options && worker_options[:worker_key]
+
+      @cache = ResultStorage.new(worker_name,t_worker_key,BDRB_CONFIG[:backgroundrb][:result_storage])
 
       if(worker_options && worker_options[:schedule] && no_auto_load)
         load_schedule_from_args
-      elsif(@config_file[:schedules] && @config_file[:schedules][worker_name.to_sym])
-        @my_schedule = @config_file[:schedules][worker_name.to_sym]
+      elsif(BDRB_CONFIG[:schedules] && BDRB_CONFIG[:schedules][worker_name.to_sym])
+        @my_schedule = BDRB_CONFIG[:schedules][worker_name.to_sym]
         new_load_schedule if @my_schedule
       end
       if respond_to?(:create)
