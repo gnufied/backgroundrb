@@ -1,4 +1,3 @@
-
 require File.join(File.dirname(__FILE__) + "/../bdrb_test_helper")
 require "meta_worker"
 require "chronic"
@@ -43,7 +42,9 @@ context "A Meta Worker should" do
   end
 
   specify "load appropriate db environment from config file" do
-    #ActiveRecord::Base.connection.current_database.should == "rails_sandbox_production"
+    ENV["RAILS_ENV"] = BDRB_CONFIG[:backgroundrb][:environment]
+    @meta_worker.send(:load_rails_env)
+    ActiveRecord::Base.connection.current_database.should == "rails_sandbox_production"
   end
 
   xspecify "remove a task from schedule if end time is reached" do
