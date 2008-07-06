@@ -31,7 +31,7 @@ end
 
 desc 'Generate documentation for the backgroundrb plugin.'
 Rake::RDocTask.new(:rdoc) do |rdoc|
-  rdoc.rdoc_dir = 'rdoc'
+  rdoc.rdoc_dir = 'doc/output/manual'
   rdoc.title    = 'Backgroundrb'
   rdoc.options << '--line-numbers' << '--inline-source'
   rdoc.rdoc_files.include('README')
