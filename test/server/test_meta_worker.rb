@@ -6,7 +6,7 @@ context "A Meta Worker should" do
   setup do
     options = {:schedules =>
       {
-        :foo_worker => { :barbar => {:trigger_args=>"*/5 * * * * *", :data =>"Hello World" }},
+        :proper_worker => { :barbar => {:trigger_args=>"*/5 * * * * *", :data =>"Hello World" }},
         :bar_worker => { :do_job => {:trigger_args=>"*/5 * * * * *", :data =>"Hello World" }}
       },
       :backgroundrb => {:log => "foreground", :debug_log => false, :environment => "production", :port => 11006, :ip => "localhost"}
@@ -15,16 +15,21 @@ context "A Meta Worker should" do
 
     BackgrounDRb::MetaWorker.worker_name = "hello_worker"
 
-    class BackgrounDRb::MetaWorker
+    class ProperWorker < BackgrounDRb::MetaWorker
       attr_accessor :outgoing_data
       attr_accessor :incoming_data
+      set_worker_name :proper_worker
       def send_data(data)
         @outgoing_data = data
       end
 
       def start_reactor; end
+
+      def ivar(var)
+        instance_variable_get("@#{var}")
+      end
     end
-    @meta_worker = BackgrounDRb::MetaWorker.start_worker
+    @meta_worker = ProperWorker.start_worker
   end
 
   specify "load appropriate db environment from config file" do
@@ -33,16 +38,16 @@ context "A Meta Worker should" do
     ActiveRecord::Base.connection.current_database.should == "rails_sandbox_production"
   end
 
-  xspecify "remove a task from schedule if end time is reached" do
+
+  specify "load appropriate schedule from config file" do
+    @meta_worker.my_schedule.should.not == nil
+    @meta_worker.my_schedule.should == {:barbar=>{:data=>"Hello World", :trigger_args=>"*/5 * * * * *"}}
+    trigger = @meta_worker.ivar(:worker_method_triggers)
+    trigger.should.not == nil
+    trigger[:barbar][:data].should == "Hello World"
   end
 
-  xspecify "load appropriate schedule from config file" do
-  end
-
-  xspecify "register status request should be send out to master" do
-  end
-
-  xspecify "load schedule from passed arguments to start worker" do
+  specify "load schedule from passed arguments to start worker" do
 
   end
 
@@ -67,3 +72,37 @@ context "A Meta Worker should" do
   end
 end
 
+context "For unix schedulers" do
+  specify "remove a task from schedule if end time is reached" do
+
+  end
+end
+
+context "For cron scheduler" do
+end
+
+context "Worker without names" do
+  specify "should throw an error on initialization" do
+    options = {:schedules =>
+      {
+        :foo_worker => { :barbar => {:trigger_args=>"*/5 * * * * *", :data =>"Hello World" }},
+        :bar_worker => { :do_job => {:trigger_args=>"*/5 * * * * *", :data =>"Hello World" }}
+      },
+      :backgroundrb => {:log => "foreground", :debug_log => false, :environment => "production", :port => 11006, :ip => "localhost"}
+    }
+    BDRB_CONFIG.set(options)
+
+    BackgrounDRb::MetaWorker.worker_name = "hello_worker"
+
+    class BoyWorker < BackgrounDRb::MetaWorker
+      attr_accessor :outgoing_data
+      attr_accessor :incoming_data
+      def send_data(data)
+        @outgoing_data = data
+      end
+
+      def start_reactor; end
+    end
+    should.raise { @meta_worker = BoyWorker.start_worker }
+  end
+end

@@ -108,6 +108,8 @@ module BackgrounDRb
     # does initialization of worker stuff and invokes create method in
     # user defined worker class
     def worker_init
+      raise "Invalid worker name" if !worker_name
+
       log_flag = BDRB_CONFIG[:backgroundrb][:debug_log].nil? ? true : BDRB_CONFIG[:backgroundrb][:debug_load_rails_env]
 
       # stores the job key of currently running job
