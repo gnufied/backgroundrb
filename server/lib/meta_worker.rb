@@ -109,6 +109,7 @@ module BackgrounDRb
     # user defined worker class
     def worker_init
       raise "Invalid worker name" if !worker_name
+      Thread.abort_on_exception = true
 
       log_flag = BDRB_CONFIG[:backgroundrb][:debug_log].nil? ? true : BDRB_CONFIG[:backgroundrb][:debug_load_rails_env]
 
@@ -135,6 +136,11 @@ module BackgrounDRb
 
     def job_key; Thread.current[:job_key]; end
     def worker_key; worker_options && worker_options[:worker_key]; end
+
+    def persistent_job
+      job_id = Thread.current[:persistent_job_id]
+      job_id ? BdrbJobQueue.find_by_id(job_id) : nil
+    end
 
     # loads workers schedule from options supplied from rails
     # a user may pass trigger arguments to dynamically define the schedule
@@ -251,6 +257,7 @@ module BackgrounDRb
       end
       return unless task
       if self.respond_to? task.worker_method
+        Thread.current[:persistent_job_id] = task.id
         called_method_arity = self.method(task.worker_method).arity
         args = load_data(task.args)
         if called_method_arity != 0

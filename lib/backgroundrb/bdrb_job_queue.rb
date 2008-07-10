@@ -28,7 +28,6 @@ class BdrbJobQueue < ActiveRecord::Base
 
   def self.insert_job(options = { })
     transaction do
-      p options
       options.merge!(:submitted_at => Time.now,:finished => 0,:taken => 0)
       t_job = new(options)
       t_job.save
@@ -39,7 +38,7 @@ class BdrbJobQueue < ActiveRecord::Base
     self.class.transaction do
       self.finished = 1
       self.finished_at = Time.now
-      self.save
+      self.save!
     end
   end
 end

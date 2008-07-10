@@ -1,10 +1,11 @@
 module BackgrounDRb
   class WorkData
-    attr_accessor :args,:block,:job_method
-    def initialize(args,job_key,job_method)
+    attr_accessor :args,:block,:job_method,:persistent_job_id,:job_key
+    def initialize(args,job_key,job_method,persistent_job_id)
       @args = args
       @job_key = job_key
       @job_method = job_method
+      @persistent_job_id = persistent_job_id
     end
   end
 
@@ -43,15 +44,18 @@ module BackgrounDRb
 
     def defer(method_name,args = nil)
       job_key = Thread.current[:job_key]
-      @work_queue << WorkData.new(args,job_key,method_name)
+      persistent_job_id = Thread.current[:persistent_job_id]
+      @work_queue << WorkData.new(args,job_key,method_name,persistent_job_id)
     end
 
     def add_thread
       @threads << Thread.new do
         Thread.current[:job_key] = nil
+        Thread.current[:persistent_job_id] = nil
         while true
           task = @work_queue.pop
           Thread.current[:job_key] = task.job_key
+          Thread.current[:persistent_job_id] = task.persistent_job_id
           block_result = run_task(task)
         end
       end
