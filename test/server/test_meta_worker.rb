@@ -106,3 +106,39 @@ context "Worker without names" do
     should.raise { @meta_worker = BoyWorker.start_worker }
   end
 end
+
+context "Worker with options" do
+  specify "should load schedule from passed options" do
+    options = { :backgroundrb => {:log => "foreground", :debug_log => false, :environment => "production", :port => 11006, :ip => "localhost"}}
+    BDRB_CONFIG.set(options)
+
+    BackgrounDRb::MetaWorker.worker_name = "hello_worker"
+
+    class CrapWorker < BackgrounDRb::MetaWorker
+      set_worker_name :crap_worker
+      set_no_auto_load true
+      attr_accessor :outgoing_data
+      attr_accessor :incoming_data
+      def send_data(data)
+        @outgoing_data = data
+      end
+
+      def start_reactor; end
+      def ivar(var); instance_variable_get("@#{var}"); end
+    end
+    write_end = mock()
+    read_end = mock()
+    worker_options = { :write_end => mock(),:read_end => mock(),
+      :options => {
+        :data => "hello", :schedule => {
+          :hello_world => { :trigger_args => "*/5 * * * * * *",
+            :data => "hello_world"
+          }
+        }
+      }
+    }
+    CrapWorker.any_instance.expects(:create).with("hello").returns(true)
+    @meta_worker = CrapWorker.start_worker(worker_options)
+    @meta_worker.my_schedule.should == {:hello_world=>{:data=>"hello_world", :trigger_args=>"*/5 * * * * * *"}}
+  end
+end
