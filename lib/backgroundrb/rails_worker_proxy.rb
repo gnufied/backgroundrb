@@ -104,6 +104,7 @@ module BackgrounDRb
       middle_man.backend_connections.each do |connection|
         connection.delete_worker(compact(:worker => worker_name, :worker_key => worker_key))
       end
+      return worker_key
     end
 
     def choose_connection host_info

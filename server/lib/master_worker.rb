@@ -42,6 +42,7 @@ module BackgrounDRb
           when :delete_worker: delete_drb_worker(t_data)
           when :worker_info: pass_worker_info(t_data)
           when :all_worker_info: all_worker_info(t_data)
+          else; debug_logger.info("Invalid request")
           end
         end
       end
@@ -73,6 +74,8 @@ module BackgrounDRb
       begin
         worker_instance = reactor.live_workers[worker_name_key]
         Process.kill('TERM',worker_instance.pid)
+        # Warning: Change is temporary, may break things
+        reactor.live_workers.delete(worker_name_key)
       rescue Packet::DisconnectError => sock_error
         reactor.remove_worker(sock_error)
       rescue
@@ -86,6 +89,7 @@ module BackgrounDRb
     end
 
     def async_method_invoke(t_data)
+      puts "calling crap thing here"
       worker_name = t_data[:worker]
       worker_name_key = gen_worker_key(worker_name,t_data[:worker_key])
       t_data.delete(:worker)
@@ -93,9 +97,10 @@ module BackgrounDRb
       begin
         ask_worker(worker_name_key,:data => t_data, :type => :request, :result => false)
       rescue Packet::DisconnectError => sock_error
+        puts "fuck man"
         reactor.live_workers.delete(worker_name_key)
       rescue
-        debug_logger.info($!.to_s)
+        debug_logger.info($!.message)
         debug_logger.info($!.backtrace.join("\n"))
         return
       end
@@ -127,7 +132,7 @@ module BackgrounDRb
       rescue Packet::DisconnectError => sock_error
         reactor.live_workers.delete(worker_name_key)
       rescue
-        debug_logger.info($!.to_s)
+        debug_logger.info($!.message)
         debug_logger.info($!.backtrace.join("\n"))
         return
       end

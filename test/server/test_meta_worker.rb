@@ -247,6 +247,7 @@ context "For enqueued tasks" do
     mocked_task = mock()
     mocked_task.expects(:worker_method).returns(:barbar).times(3)
     mocked_task.expects(:args).returns(Marshal.dump("hello"))
+    mocked_task.expects(:[]).returns(1)
     @meta_worker.expects(:barbar).with("hello").returns(true)
     BdrbJobQueue.expects(:find_next).with("queue_worker").returns(mocked_task)
     @meta_worker.check_for_enqueued_tasks
@@ -255,6 +256,7 @@ context "For enqueued tasks" do
   specify "should run enqueued tasks without arguments if they are there in the queue" do
     @meta_worker = QueueWorker.start_worker
     mocked_task = mock()
+    mocked_task.expects(:[]).returns(1)
     mocked_task.expects(:worker_method).returns(:barbar).times(3)
     mocked_task.expects(:args).returns(nil)
     @meta_worker.expects(:barbar)
