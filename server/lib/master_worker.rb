@@ -73,6 +73,7 @@ module BackgrounDRb
       worker_name_key = gen_worker_key(worker_name,worker_key)
       begin
         worker_instance = reactor.live_workers[worker_name_key]
+        raise Packet::InvalidWorker.new("Invalid worker with name #{worker_name} key #{worker_key}") unless worker_instance
         Process.kill('TERM',worker_instance.pid)
         # Warning: Change is temporary, may break things
         reactor.live_workers.delete(worker_name_key)
@@ -89,7 +90,6 @@ module BackgrounDRb
     end
 
     def async_method_invoke(t_data)
-      puts "calling crap thing here"
       worker_name = t_data[:worker]
       worker_name_key = gen_worker_key(worker_name,t_data[:worker_key])
       t_data.delete(:worker)
@@ -97,7 +97,6 @@ module BackgrounDRb
       begin
         ask_worker(worker_name_key,:data => t_data, :type => :request, :result => false)
       rescue Packet::DisconnectError => sock_error
-        puts "fuck man"
         reactor.live_workers.delete(worker_name_key)
       rescue
         debug_logger.info($!.message)

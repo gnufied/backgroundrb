@@ -78,9 +78,19 @@ context "Master Worker in general should" do
     @master_worker.outgoing_data.should == {:type=>:start_worker, :worker_key=>"boy", :worker=>:foo_worker}
   end
 
+  # FIXME: this test should be further broken down
   specify "should run delete worker requests itself" do
     e = {:worker_key=>"boy", :type=>:delete_worker, :worker=>:foo_worker}
+    @master_worker.expects(:delete_drb_worker).returns(nil)
     @master_worker.receive_data(dump_object(e))
+  end
+
+  specify "should route worker info requests" do
+
+  end
+
+  specify "should route all_worker_info requests" do
+
   end
 
   specify "ignore errors if sending request to worker failed" do
