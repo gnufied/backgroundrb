@@ -1,4 +1,5 @@
 require File.join(File.dirname(__FILE__) + "/..","bdrb_test_helper")
+require "mocha"
 
 context "Master proxy for reloadable workers" do
   ENV["RAILS_ENV"] = "production"

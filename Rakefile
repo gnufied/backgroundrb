@@ -23,10 +23,8 @@ Spec::Rake::SpecTask.new('specs') do |t|
 end
 
 desc "RCov"
-Spec::Rake::SpecTask.new('rcov') do |t|
-  t.spec_files = FileList['test/**/test_*.rb']
-  t.libs = ['lib', 'server/lib' ]
-  t.rcov = true
+task :rcov do
+  sh("rcov test/**/*.rb")
 end
 
 desc 'Generate documentation for the backgroundrb plugin.'

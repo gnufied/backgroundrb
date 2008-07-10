@@ -47,11 +47,7 @@ context "A Meta Worker should" do
     trigger[:barbar][:data].should == "Hello World"
   end
 
-  xspecify "should have access to logger objects" do
-
-  end
-
-  xspecify "logger object should support info, error and debug methods" do
+  specify "should load passed data and invoke methods" do
 
   end
 
@@ -74,8 +70,8 @@ context "For unix schedulers" do
       {
         :unix_worker => { :barbar => { :trigger_args =>
             {
-              :start => Time.now + 2.seconds,
-              :end => Time.now + 10.seconds,
+              :start => (Time.now + 2.seconds).to_s,
+              :end => (Time.now + 10.seconds).to_s,
               :repeat_interval => 2.seconds,
               :data => "unix_worker"
             }
@@ -105,6 +101,8 @@ context "For unix schedulers" do
     end
     @meta_worker = UnixWorker.start_worker
     @meta_worker.my_schedule.should.not == nil
+    @meta_worker.ivar(:worker_method_triggers).should.not == nil
+    @meta_worker.ivar(:worker_method_triggers)[:barbar].should.not == nil
   end
 end
 
