@@ -1,0 +1,3 @@
+* Some issues that I am aware of *
+- Creation of job queue may fail on other that mysql dbs
+- Database doesn't get created when someone runs the migrations again

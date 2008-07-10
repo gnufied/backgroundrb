@@ -134,7 +134,7 @@ module BackgrounDRb
     end
 
     def job_key; Thread.current[:job_key]; end
-    def worker_key; worker_options[:worker_key]; end
+    def worker_key; worker_options && worker_options[:worker_key]; end
 
     # loads workers schedule from options supplied from rails
     # a user may pass trigger arguments to dynamically define the schedule
@@ -224,7 +224,6 @@ module BackgrounDRb
     def send_response input,output
       input[:data] = output
       input[:type] = :response
-
       begin
         send_data(input)
       rescue TypeError => e

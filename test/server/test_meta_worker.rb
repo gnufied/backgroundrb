@@ -3,6 +3,11 @@ require "meta_worker"
 require "chronic"
 
 context "A Meta Worker should" do
+  def dump_object data
+    t = Marshal.dump(data)
+    t.length.to_s.rjust(9,'0') + t
+  end
+
   setup do
     options = {:schedules =>
       {
@@ -48,20 +53,61 @@ context "A Meta Worker should" do
   end
 
   specify "should load passed data and invoke methods" do
-
+    a = {:data=>{:worker_method=>"who", :arg=>"rails"}, :type=>:request, :result=>false, :client_signature=>9}
+    b = {:data=>{:worker_method=>"baz", :arg=>"rails"}, :type=>:request, :result=>true, :client_signature=>9}
+    c = {:data=>{:job_key=>:start_message}, :type=>:get_result, :result=>true, :client_signature=>9}
+    t_request = "000000088\004\b{\t:\ttype:\frequest:\025client_signaturei\016:\vresultF:\tdata{\a:\022worker_method\"\bwho:\barg\"\nrails"
+    @meta_worker.expects(:receive_data).with(a).returns(nil)
+    @meta_worker.receive_internal_data(t_request)
   end
 
-  xspecify "invoke particular method based on user arguments" do
-
+  specify "should invoke async tasks without sending results" do
+    a = {:data=>{:worker_method=>"who", :arg=>"rails",:job_key => "lol"}, :type=>:request, :result=>false, :client_signature=>9}
+    @meta_worker.expects(:who).with("rails").returns(nil)
+    @meta_worker.receive_internal_data(dump_object(a))
+    Thread.current[:job_key].should == "lol"
   end
 
-  xspecify "should send results back to master only when response can be dumped" do
-
+  specify "should invoke sync methods and return results back" do
+    class << @meta_worker
+      def baz args
+        "hello : #{args}"
+      end
+    end
+    b = {:data=>{:worker_method=>"baz", :arg=>"rails"}, :type=>:request, :result=>true, :client_signature=>9}
+    @meta_worker.expects(:send_data).with({:data=>"hello : rails", :type=>:response, :result=>true, :client_signature=>9}).returns("hello : rails")
+    @meta_worker.receive_internal_data(dump_object(b))
+    Thread.current[:job_key].should == nil
   end
 
-  xspecify "should check for arguments of the invoked worker method" do
-
+  specify "for result request" do
+    class << @meta_worker
+      attr_accessor :t_result
+      def send_data data
+        @t_result = data
+      end
+    end
+    @meta_worker.cache[:start_message] = "helloworld"
+    c = {:data=>{:job_key=>:start_message}, :type=>:get_result, :result=>true, :client_signature=>9}
+    @meta_worker.receive_internal_data(dump_object(c))
+    @meta_worker.t_result[:data].should == "helloworld"
   end
+
+  specify "for results that cant be dumped" do
+    class << @meta_worker
+      def baz args
+        proc { "boy"}
+      end
+      def send_data input
+        dump_object(input)
+      end
+    end
+    b = {:data=>{:worker_method=>"baz", :arg=>"rails"}, :type=>:request, :result=>true, :client_signature=>9}
+    a = @meta_worker.receive_internal_data(dump_object(b))
+    a.should == nil
+    Thread.current[:job_key].should == nil
+  end
+
 end
 
 context "For unix schedulers" do
@@ -165,5 +211,54 @@ context "Worker with options" do
     CrapWorker.any_instance.expects(:create).with("hello").returns(true)
     @meta_worker = CrapWorker.start_worker(worker_options)
     @meta_worker.my_schedule.should == {:hello_world=>{:data=>"hello_world", :trigger_args=>"*/5 * * * * * *"}}
+  end
+end
+
+context "For enqueued tasks" do
+  setup do
+    options = {:schedules =>
+      {
+        :proper_worker => { :barbar => {:trigger_args=>"*/5 * * * * *", :data =>"Hello World" }},
+        :bar_worker => { :do_job => {:trigger_args=>"*/5 * * * * *", :data =>"Hello World" }}
+      },
+      :backgroundrb => {:log => "foreground", :debug_log => false, :environment => "production", :port => 11006, :ip => "localhost"}
+    }
+    BDRB_CONFIG.set(options)
+
+    class BdrbJobQueue < ActiveRecord::Base; end
+    class QueueWorker < BackgrounDRb::MetaWorker
+      attr_accessor :outgoing_data
+      attr_accessor :incoming_data
+      set_worker_name :queue_worker
+      def send_data(data)
+        @outgoing_data = data
+      end
+
+      def start_reactor; end
+
+      def ivar(var)
+        instance_variable_get("@#{var}")
+      end
+    end
+  end
+
+  specify "should run enqueued tasks with arguments if they are there in the queue" do
+    @meta_worker = QueueWorker.start_worker
+    mocked_task = mock()
+    mocked_task.expects(:worker_method).returns(:barbar).times(3)
+    mocked_task.expects(:args).returns(Marshal.dump("hello"))
+    @meta_worker.expects(:barbar).with("hello").returns(true)
+    BdrbJobQueue.expects(:find_next).with("queue_worker").returns(mocked_task)
+    @meta_worker.check_for_enqueued_tasks
+  end
+
+  specify "should run enqueued tasks without arguments if they are there in the queue" do
+    @meta_worker = QueueWorker.start_worker
+    mocked_task = mock()
+    mocked_task.expects(:worker_method).returns(:barbar).times(3)
+    mocked_task.expects(:args).returns(nil)
+    @meta_worker.expects(:barbar)
+    BdrbJobQueue.expects(:find_next).with("queue_worker").returns(mocked_task)
+    @meta_worker.check_for_enqueued_tasks
   end
 end
