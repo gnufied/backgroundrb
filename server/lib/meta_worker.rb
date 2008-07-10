@@ -294,11 +294,6 @@ module BackgrounDRb
       end
     end
 
-    # method would allow user threads to run exclusively for a while
-    def run_user_threads
-      @thread_pool.exclusive_run
-    end
-
     private
     def load_rails_env
       db_config_file = YAML.load(ERB.new(IO.read("#{RAILS_HOME}/config/database.yml")).result)

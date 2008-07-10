@@ -47,10 +47,6 @@ context "A Meta Worker should" do
     trigger[:barbar][:data].should == "Hello World"
   end
 
-  specify "load schedule from passed arguments to start worker" do
-
-  end
-
   xspecify "should have access to logger objects" do
 
   end
@@ -74,11 +70,42 @@ end
 
 context "For unix schedulers" do
   specify "remove a task from schedule if end time is reached" do
+    options = {:schedules =>
+      {
+        :unix_worker => { :barbar => { :trigger_args =>
+            {
+              :start => Time.now + 2.seconds,
+              :end => Time.now + 10.seconds,
+              :repeat_interval => 2.seconds,
+              :data => "unix_worker"
+            }
+          }
+        },
+      },
+      :backgroundrb =>
+      {
+        :log => "foreground", :debug_log => false, :environment => "production", :port => 11006, :ip => "localhost"
+      }
+    }
+    BDRB_CONFIG.set(options)
 
+    class UnixWorker < BackgrounDRb::MetaWorker
+      attr_accessor :outgoing_data
+      attr_accessor :incoming_data
+      set_worker_name :unix_worker
+      def send_data(data)
+        @outgoing_data = data
+      end
+
+      def start_reactor; end
+
+      def ivar(var)
+        instance_variable_get("@#{var}")
+      end
+    end
+    @meta_worker = UnixWorker.start_worker
+    @meta_worker.my_schedule.should.not == nil
   end
-end
-
-context "For cron scheduler" do
 end
 
 context "Worker without names" do
