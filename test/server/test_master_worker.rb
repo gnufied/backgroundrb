@@ -12,7 +12,8 @@ context "Master Worker in general should" do
     @master_worker.post_init
     class << @master_worker
       attr_accessor :outgoing_data
-      attr_accessor :key
+      attr_accessor :key,:live_workers
+
       def packet_classify(original_string)
         word_parts = original_string.split('_')
         return word_parts.map { |x| x.capitalize}.join
@@ -86,11 +87,26 @@ context "Master Worker in general should" do
   end
 
   specify "should route worker info requests" do
-
+    g = {:worker_key=>"boy", :type=>:worker_info, :worker=>:foo_worker}
+    t_reactor = stub()
+    live_workers = stub()
+    live_workers.expects(:[]).returns(nil)
+    t_reactor.expects(:live_workers).returns(live_workers)
+    @master_worker.expects(:send_object).with({:worker_key=>"boy", :worker=>:foo_worker, :status=>:stopped}).returns(true)
+    @master_worker.expects(:reactor).returns(t_reactor)
+    @master_worker.receive_data(dump_object(g))
   end
 
   specify "should route all_worker_info requests" do
+    f = {:type=>:all_worker_info}
+    t_reactor = stub()
+    live_workers = stub()
+    live_workers.stubs(:each).returns(:foo,mock())
+    t_reactor.expects(:live_workers).returns(live_workers)
+    @master_worker.expects(:send_object).returns(true)
+    @master_worker.expects(:reactor).returns(t_reactor)
 
+    @master_worker.receive_data(dump_object(f))
   end
 
   specify "ignore errors if sending request to worker failed" do
