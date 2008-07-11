@@ -5,6 +5,7 @@ module BackgrounDRb
     attr_accessor :backend_connections,:config,:cache,:bdrb_servers
     attr_accessor :disconnected_connections
 
+    # initialize cluster connection
     def initialize
       @bdrb_servers = []
       @backend_connections = []
@@ -18,6 +19,7 @@ module BackgrounDRb
       @round_robin = (0...@backend_connections.length).to_a
     end
 
+    # initialize memache if client is storing results in memcache
     def initialize_memcache
       require 'memcache'
       memcache_options = {
@@ -63,6 +65,8 @@ module BackgrounDRb
       @round_robin = (0...@backend_connections.length).to_a
     end
 
+    # Find live connections except those mentioned in array, because they
+    # are already dead.
     def find_next_except_these connections
       invalid_connections = @backend_connections.select { |x| connections.include?(x.server_info) }
       @backend_connections.delete_if { |x| connections.include?(x.server_info) }
@@ -75,26 +79,31 @@ module BackgrounDRb
       chosen
     end
 
+    # Fina a connection by host name and port
     def find_connection host_info
       conn = @backend_connections.detect { |x| x.server_info == host_info }
       raise NoServerAvailable.new("BackgrounDRb server is not found running on #{host_info}") unless conn
       return conn
     end
 
+    # find the local configured connection
     def find_local
       find_connection("#{BDRB_CONFIG[:backgroundrb][:ip]}:#{BDRB_CONFIG[:backgroundrb][:port]}")
     end
 
+    # return the worker proxy
     def worker(worker_name,worker_key = nil)
       update_stats
       RailsWorkerProxy.new(worker_name,worker_key,self)
     end
 
+    # Update the stats and discover new nodes if they came up.
     def update_stats
       @request_count += 1
       discover_server_periodically if(time_to_discover? && !@disconnected_connections.empty?)
     end
 
+    # Check if, we should try to discover new bdrb servers
     def time_to_discover?
       if((@request_count%10 == 0) or (Time.now > (@last_polled_time + 10.seconds)))
         @last_polled_time = Time.now
@@ -104,6 +113,8 @@ module BackgrounDRb
       end
     end
 
+    # Send worker information of all currently running workers from all configured bdrb
+    # servers
     def all_worker_info
       update_stats
       info_data = {}
@@ -126,6 +137,7 @@ module BackgrounDRb
       raise NoServerAvailable.new("No BackgrounDRb server is found running") unless succeeded
     end
 
+    # choose a server in round robin manner.
     def choose_server
       if @round_robin.empty?
         @round_robin = (0...@backend_connections.length).to_a

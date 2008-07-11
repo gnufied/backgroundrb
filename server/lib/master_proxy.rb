@@ -22,6 +22,7 @@ module BackgrounDRb
       end
     end
 
+    # FIXME: Method by same name exists in Packet::NbioHelper module
     def gen_worker_key(worker_name,worker_key = nil)
       return worker_name if worker_key.nil?
       return "#{worker_name}_#{worker_key}".to_sym
@@ -46,6 +47,7 @@ module BackgrounDRb
       end
     end
 
+    # load schedule of workers which should be restarted on schedule
     def load_reloadable_schedule(t_worker)
       worker_method_triggers = { }
       all_schedules = BDRB_CONFIG[:schedules]
@@ -72,7 +74,7 @@ module BackgrounDRb
       worker_method_triggers
     end
 
-    # method will reload workers that should be loaded on each schedule
+    # Start the workers whose schedule has come
     def reload_workers
       return if worker_triggers.empty?
       worker_triggers.each do |key,value|

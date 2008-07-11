@@ -9,6 +9,7 @@ module BackgrounDRb
       @cache = (@storage_type == 'memcache') ? memcache_instance : {}
     end
 
+    # Initialize Memcache for result or object caching
     def memcache_instance
       require 'memcache'
       memcache_options = {
@@ -24,6 +25,8 @@ module BackgrounDRb
       t_cache
     end
 
+    # generate key based on worker_name and worker_key
+    # for local cache, there is no need of unique key
     def gen_key key
       if storage_type == 'memcache'
         key = [worker_name,worker_key,key].compact.join('_')
@@ -33,6 +36,7 @@ module BackgrounDRb
       end
     end
 
+    # fetch object from cache
     def [] key
       @mutex.synchronize { @cache[gen_key(key)] }
     end

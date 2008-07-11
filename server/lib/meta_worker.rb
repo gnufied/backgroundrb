@@ -93,11 +93,13 @@ module BackgrounDRb
     @pool_size = nil
     @reload_flag = false
 
+    # set the thread pool size, default is 20
     def self.pool_size(size = nil)
       @pool_size = size if size
       @pool_size
     end
 
+    # set auto restart flag on the worker
     def self.reload_on_schedule(flag = nil)
       if flag
         self.no_auto_load = true
@@ -134,9 +136,14 @@ module BackgrounDRb
       add_periodic_timer(5) { check_for_enqueued_tasks }
     end
 
+    # return job key from thread global variable
     def job_key; Thread.current[:job_key]; end
+
+    # if worker is running using a worker key, return it
     def worker_key; worker_options && worker_options[:worker_key]; end
 
+    # fetch the persistent job id of job currently running, create AR object
+    # and return to the user.
     def persistent_job
       job_id = Thread.current[:persistent_job_id]
       job_id ? BdrbJobQueue.find_by_id(job_id) : nil
@@ -149,6 +156,7 @@ module BackgrounDRb
       new_load_schedule if @my_schedule
     end
 
+    # Gets called, whenever master bdrb process sends any data to the worker
     def receive_internal_data data
       @tokenizer.extract(data) do |b_data|
         data_obj = load_data(b_data)
@@ -200,6 +208,7 @@ module BackgrounDRb
       end
     end
 
+    # can the respones be dumped?
     def can_dump?(p_object)
       begin
         Marshal.dump(p_object)
@@ -211,7 +220,7 @@ module BackgrounDRb
       end
     end
 
-    # new experimental scheduler
+    # Load the schedule of worker from my_schedule instance variable
     def new_load_schedule
       @worker_method_triggers = { }
       @my_schedule.each do |key,value|
@@ -227,6 +236,8 @@ module BackgrounDRb
       end
     end
 
+    # send the response back to master process and hence to the client
+    # if there is an error while dumping the object, send "invalid_result_dump_check_log"
     def send_response input,output
       input[:data] = output
       input[:type] = :response
@@ -245,10 +256,12 @@ module BackgrounDRb
       end
     end
 
+    # called when connection is closed
     def unbind; end
 
     def connection_completed; end
 
+    # Check for enqueued tasks and invoke appropriate methods
     def check_for_enqueued_tasks
       if worker_key && !worker_key.empty?
         task = BdrbJobQueue.find_next(worker_name.to_s,worker_key.to_s)
@@ -270,6 +283,7 @@ module BackgrounDRb
       end
     end
 
+    # Check for timer events and invoke scheduled methods in timer and scheduler
     def check_for_timer_events
       super
       return if @worker_method_triggers.nil? or @worker_method_triggers.empty?
@@ -291,6 +305,7 @@ module BackgrounDRb
       end
     end
 
+    # Periodic check for lost database connections and closed connections
     def check_db_connection
       begin
         ActiveRecord::Base.verify_active_connections! if defined?(ActiveRecord)

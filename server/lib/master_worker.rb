@@ -27,6 +27,7 @@ module BackgrounDRb
   class MasterWorker
     attr_accessor :debug_logger
     include BackgrounDRb::BdrbServerHelper
+    # receives requests from rails and based on request type invoke appropriate method
     def receive_data p_data
       @tokenizer.extract(p_data) do |b_data|
         t_data = load_data b_data
@@ -48,7 +49,7 @@ module BackgrounDRb
       end
     end
 
-    #
+    # Send worker info to the user
     def pass_worker_info(t_data)
       worker_name_key = gen_worker_key(t_data[:worker],t_data[:worker_key])
       worker_instance = reactor.live_workers[worker_name_key]
@@ -57,6 +58,7 @@ module BackgrounDRb
       send_object(info_response)
     end
 
+    # collect all worker info in an array and send to the user
     def all_worker_info(t_data)
       info_response = []
       reactor.live_workers.each do |key,value|
@@ -66,7 +68,8 @@ module BackgrounDRb
       send_object(info_response)
     end
 
-    # it could be a good idea to remove it here itself.
+    # Delete the worker. Sends TERM signal to the worker process and removes
+    # worker key from list of available workers
     def delete_drb_worker(t_data)
       worker_name = t_data[:worker]
       worker_key = t_data[:worker_key]
@@ -85,10 +88,12 @@ module BackgrounDRb
       end
     end
 
+    # start a new worker
     def start_worker_request(p_data)
       start_worker(p_data)
     end
 
+    # Invoke an asynchronous method on a worker
     def async_method_invoke(t_data)
       worker_name = t_data[:worker]
       worker_name_key = gen_worker_key(worker_name,t_data[:worker_key])
@@ -105,6 +110,10 @@ module BackgrounDRb
       end
     end
 
+    # Given a cache key, ask the worker for result stored in it.
+    # If you are using Memcache for result storage, this method won't be
+    # called at all and bdrb client library will directly fetch
+    # the results from memcache and return
     def get_result_object(t_data)
       worker_name = t_data[:worker]
       worker_name_key = gen_worker_key(worker_name,t_data[:worker_key])
@@ -121,6 +130,7 @@ module BackgrounDRb
       end
     end
 
+    # Invoke a synchronous/blocking method on a worker.
     def method_invoke(t_data)
       worker_name = t_data[:worker]
       worker_name_key = gen_worker_key(worker_name,t_data[:worker_key])
@@ -137,7 +147,7 @@ module BackgrounDRb
       end
     end
 
-    # this method can receive one shot status reports or proper results
+    # Receieve responses from workers and dispatch them back to the client
     def worker_receive p_data
       send_object(p_data)
     end
@@ -145,6 +155,8 @@ module BackgrounDRb
     def unbind
       debug_logger.info("Client disconected")
     end
+
+    # called whenever a new connection is made.Initializes binary data parser
     def post_init
       @tokenizer = Packet::BinParser.new
     end

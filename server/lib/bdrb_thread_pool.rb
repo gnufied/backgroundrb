@@ -25,21 +25,21 @@ module BackgrounDRb
     # can be used to make a call in threaded manner
     # passed block runs in a thread from thread pool
     # for example in a worker method you can do:
+    #   def user_tags url
+    #     thread_pool.defer(:fetch_url,url)
+    #   end
     #   def fetch_url(url)
-    #     puts "fetching url #{url}"
-    #     thread_pool.defer(url) do |url|
-    #       begin
-    #         data = Net::HTTP.get(url,'/')
-    #         File.open("#{RAILS_ROOT}/log/pages.txt","w") do |fl|
-    #           fl.puts(data)
-    #         end
-    #       rescue
-    #         logger.info "Error downloading page"
+    #     begin
+    #       data = Net::HTTP.get(url,'/')
+    #       File.open("#{RAILS_ROOT}/log/pages.txt","w") do |fl|
+    #         fl.puts(data)
     #       end
+    #     rescue
+    #       logger.info "Error downloading page"
     #     end
     #   end
     # you can invoke above method from rails as:
-    #   MiddleMan.ask_work(:worker => :rss_worker, :worker_method => :fetch_url, :data => "www.example.com")
+    #   MiddleMan.worker(:rss_worker).async_user_tags(:arg => "en.wikipedia.org")
     # assuming method is defined in rss_worker
 
     def defer(method_name,args = nil)
@@ -48,6 +48,7 @@ module BackgrounDRb
       @work_queue << WorkData.new(args,job_key,method_name,persistent_job_id)
     end
 
+    # Start worker threads
     def add_thread
       @threads << Thread.new do
         Thread.current[:job_key] = nil
@@ -61,6 +62,7 @@ module BackgrounDRb
       end
     end
 
+    # run tasks popped out of queue
     def run_task task
       block_arity = master.method(task.job_method).arity
       begin

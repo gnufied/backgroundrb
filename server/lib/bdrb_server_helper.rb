@@ -1,5 +1,7 @@
 module BackgrounDRb
   module BdrbServerHelper
+    # Load data using Marshal.load, if load fails because of undefined constant
+    # try to load the constant. FIXME: regexp needs to handle all the cases.
     def load_data data
       begin
         return Marshal.load(data)

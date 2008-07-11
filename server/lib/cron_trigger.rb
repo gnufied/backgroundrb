@@ -6,10 +6,12 @@ module BackgrounDRb
 
     attr_reader :sec, :min, :hour, :day, :month, :wday, :year, :cron_expr
 
+    # initialize the Cron Trigger
     def initialize(expr)
       self.cron_expr = expr
     end
 
+    # create the cron expression and populate instance variables.
     def cron_expr=(expr)
       @cron_expr = expr
       self.sec, self.min, self.hour, self.day, self.month, self.wday, self.year = @cron_expr.split(' ')

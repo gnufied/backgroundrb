@@ -7,7 +7,6 @@ require "ostruct"
 BACKGROUNDRB_ROOT = Pathname.new(RAILS_ROOT).realpath.to_s
 require "backgroundrb/bdrb_config"
 unless defined?(BDRB_CONFIG)
-  puts "fuck"
   BDRB_CONFIG = BackgrounDRb::Config.read_config("#{BACKGROUNDRB_ROOT}/config/backgroundrb.yml")
 end
 
