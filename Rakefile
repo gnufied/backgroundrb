@@ -11,7 +11,7 @@ task :default => :test
 desc 'Test the backgroundrb plugin.'
 Rake::TestTask.new(:test) do |t|
   t.libs << 'lib'
-  t.pattern = 'test/**/*_test.rb'
+  t.pattern = 'test/**/test_*.rb'
   t.verbose = true
 end
 
@@ -23,15 +23,13 @@ Spec::Rake::SpecTask.new('specs') do |t|
 end
 
 desc "RCov"
-Spec::Rake::SpecTask.new('rcov') do |t|
-  t.spec_files = FileList['specs/**/*_spec.rb']
-  t.libs = ['lib', 'server/lib' ]
-  t.rcov = true
+task :rcov do
+  sh("rcov test/**/*.rb")
 end
 
 desc 'Generate documentation for the backgroundrb plugin.'
 Rake::RDocTask.new(:rdoc) do |rdoc|
-  rdoc.rdoc_dir = 'rdoc'
+  rdoc.rdoc_dir = 'doc/output/manual'
   rdoc.title    = 'Backgroundrb'
   rdoc.options << '--line-numbers' << '--inline-source'
   rdoc.rdoc_files.include('README')

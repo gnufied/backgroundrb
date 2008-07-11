@@ -2,7 +2,7 @@ class LogWorker < Packet::Worker
   set_worker_name :log_worker
   attr_accessor :log_file
   def worker_init
-    @log_file = Logger.new("#{RAILS_HOME}/log/backgroundrb_#{CONFIG_FILE[:backgroundrb][:port]}.log")
+    @log_file = Logger.new("#{RAILS_HOME}/log/backgroundrb_#{BDRB_CONFIG[:backgroundrb][:port]}.log")
   end
 
   def receive_data p_data

@@ -33,12 +33,21 @@ p(sub-title). Getting the code from Subversion :
 
 p(sub-title). Installing from Git:
 
-As of version 1.0.3 __BackgrounDRb__ development has moved to gitorious. Above SVN url
+As of version 1.0.3 __BackgrounDRb__ development has moved to <a href="http://github.com/gnufied/backgroundrb/tree/master">github</a>. Above SVN url
 will always mirror stable releases from Git. However to enjoy latest and greatest of features
 you can install the plugin from git:
 
 <pre class="multiline">
 git clone git://github.com/gnufied/backgroundrb.git </pre>
+
+Also for running git version of BackgrounDRb you will need, git version of packet.
+
+<pre class="multiline">
+git clone git://github.com/gnufied/packet.git
+cd packet;rake gem
+cd pkg; sudo gem install --local packet-0.1.6.gem</pre>
+
+If you are getting some error while building the gem, probably you need to install RSpec gem.
 
 p(sub-title). Installation using Piston
 

@@ -1,4 +1,41 @@
 namespace :backgroundrb do
+  def setup_queue_migration
+    config_file = "#{RAILS_ROOT}/config/database.yml"
+    require "erb"
+    require "active_record"
+    config = YAML.load(ERB.new(IO.read(config_file)).result)
+    env = ENV["env"] || 'development'
+    ActiveRecord::Base.establish_connection(config[env])
+
+    table_creation =<<-EOD
+      create table bdrb_job_queues(
+        id integer not null auto_increment primary key,
+        args               blob,
+        worker_name        varchar(255),
+        worker_method      varchar(255),
+        job_key            varchar(255),
+        taken              tinyint,
+        finished           tinyint,
+        timeout            int,
+        priority           int,
+        submitted_at       datetime,
+        started_at         datetime,
+        finished_at        datetime,
+        archived_at        datetime,
+        tag                varchar(255),
+        submitter_info     varchar(255),
+        runner_info        varchar(255),
+        worker_key         varchar(255)
+      ) ENGINE=InnoDB;
+    EOD
+    connection = ActiveRecord::Base.connection
+    begin
+      connection.execute(table_creation)
+    rescue ActiveRecord::StatementInvalid => e
+      #puts e.message
+    end
+  end
+
   require 'yaml'
   desc 'Setup backgroundrb in your rails application'
   task :setup do
@@ -40,11 +77,29 @@ namespace :backgroundrb do
       puts "Copying Worker envionment loader file #{worker_env_loader_dest}"
       FileUtils.cp_r(worker_env_loader_src,worker_env_loader_dest)
     end
+    setup_queue_migration
+  end
+
+  desc 'update backgroundrb config files from your rails application'
+  task :update do
+    temp_scripts = ["backgroundrb","load_worker_env.rb"].map {|x| "#{RAILS_ROOT}/script/#{x}"}
+    temp_scripts.each do |file_name|
+      if File.exists?(file_name)
+        puts "Removing #{file_name} ..."
+        FileUtils.rm(file_name,:force => true)
+      end
+    end
+    new_temp_scripts = ["backgroundrb","load_worker_env.rb"].map {|x| File.dirname(__FILE__) + "/../script/#{x}" }
+    new_temp_scripts.each do |file_name|
+      puts "Updating file #{File.expand_path(file_name)} ..."
+      FileUtils.cp_r(file_name,"#{RAILS_ROOT}/script/")
+    end
   end
 
   desc 'Remove backgroundrb from your rails application'
   task :remove do
     script_src = "#{RAILS_ROOT}/script/backgroundrb"
+    temp_scripts = ["backgroundrb","load_worker_env.rb"].map {|x| "#{RAILS_ROOT}/script/#{x}"}
 
     if File.exists?(script_src)
         puts "Removing #{script_src} ..."

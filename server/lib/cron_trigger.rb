@@ -6,38 +6,40 @@ module BackgrounDRb
 
     attr_reader :sec, :min, :hour, :day, :month, :wday, :year, :cron_expr
 
+    # initialize the Cron Trigger
     def initialize(expr)
       self.cron_expr = expr
     end
 
+    # create the cron expression and populate instance variables.
     def cron_expr=(expr)
       @cron_expr = expr
       self.sec, self.min, self.hour, self.day, self.month, self.wday, self.year = @cron_expr.split(' ')
     end
-    
+
     def fire_after_time(p_time)
       @t_sec,@t_min,@t_hour,@t_day,@t_month,@t_year,@t_wday,@t_yday,@t_idst,@t_zone = p_time.to_a
       @count = 0
-      loop do 
+      loop do
         @count += 1
 
         if @year && !@year.include?(@t_year)
           return nil if @t_year > @year.max
           @t_year = @year.detect { |y| y > @t_year }
         end
-        
+
         # if range of months doesn't include current month, find next month from the range
         unless @month.include?(@t_month)
           next_month = @month.detect { |m| m > @t_month } || @month.min
           @t_day,@t_hour,@t_min,@t_sec = @day.min,@hour.min,@min.min,@sec.min
-          if next_month < @t_month 
+          if next_month < @t_month
             @t_month = next_month
-            @t_year += 1 
+            @t_year += 1
             retry
           end
           @t_month = next_month
         end
-        
+
         if !day_restricted? && wday_restricted?
           unless @wday.include?(@t_wday)
             next_wday = @wday.detect { |w| w > @t_wday} || @wday.min
@@ -70,7 +72,7 @@ module BackgrounDRb
             next_day = day_array.detect { |d| d > @t_day } || day_array.min
             next_wday = @wday.detect { |w| w > @t_wday } || @wday.min
             @t_hour,@t_min,@t_sec = @hour.min,@min.min,@sec.min
-            
+
             # if next_day is nil or less than @t_day it means that it should run in next month
             if !next_day || next_day < @t_day
               next_time_mday = Chronic.parse("next month",:now => current_time)
@@ -87,7 +89,7 @@ module BackgrounDRb
             retry
           end
         end
-        
+
         unless @hour.include?(@t_hour)
           next_hour = @hour.detect { |h| h > @t_hour } || @hour.min
           @t_min,@t_sec = @min.min,@sec.min
@@ -99,7 +101,7 @@ module BackgrounDRb
           end
           @t_hour = next_hour
         end
-        
+
         unless @min.include?(@t_min)
           next_min = @min.detect { |m| m > @t_min } || @min.min
           @t_sec = @sec.min
@@ -111,7 +113,7 @@ module BackgrounDRb
           end
           @t_min = next_min
         end
-        
+
         unless @sec.include?(@t_sec)
           next_sec = @sec.detect { |s| s > @t_sec } || @sec.min
           if next_sec < @t_sec
@@ -126,7 +128,7 @@ module BackgrounDRb
       end # end of loop do
       current_time
     end
-    
+
     def current_time
       Time.local(@t_sec,@t_min,@t_hour,@t_day,@t_month,@t_year,@t_wday,nil,@t_idst,@t_zone)
     end
