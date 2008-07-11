@@ -12,7 +12,8 @@ context "Master Worker in general should" do
     @master_worker.post_init
     class << @master_worker
       attr_accessor :outgoing_data
-      attr_accessor :key
+      attr_accessor :key,:live_workers,:excpetion_type
+
       def packet_classify(original_string)
         word_parts = original_string.split('_')
         return word_parts.map { |x| x.capitalize}.join
@@ -23,16 +24,28 @@ context "Master Worker in general should" do
         return "#{worker_name}_#{worker_key}".to_sym
       end
       def ask_worker key,data
-        @key = key
-        @outgoing_data = data
+        case @excpetion_type
+        when :disconnect
+          raise Packet::DisconnectError.new("boy")
+        when :generic
+          raise "Crap"
+        else
+          @key = key
+          @outgoing_data = data
+        end
       end
+
       def start_worker data
         @outgoing_data = data
+      end
+
+      def ask_for_exception type
+        @excpetion_type = type
       end
     end
 
     class DummyLogger
-      def method_missing method_id,*args; error = args.first; puts error; end
+      def method_missing method_id,*args; "boy"; end
     end
     logger = DummyLogger.new
     @master_worker.debug_logger = logger
@@ -86,62 +99,49 @@ context "Master Worker in general should" do
   end
 
   specify "should route worker info requests" do
-
+    g = {:worker_key=>"boy", :type=>:worker_info, :worker=>:foo_worker}
+    t_reactor = stub()
+    live_workers = stub()
+    live_workers.expects(:[]).returns(nil)
+    t_reactor.expects(:live_workers).returns(live_workers)
+    @master_worker.expects(:send_object).with({:worker_key=>"boy", :worker=>:foo_worker, :status=>:stopped}).returns(true)
+    @master_worker.expects(:reactor).returns(t_reactor)
+    @master_worker.receive_data(dump_object(g))
   end
 
   specify "should route all_worker_info requests" do
+    f = {:type=>:all_worker_info}
+    t_reactor = stub()
+    live_workers = stub()
+    live_workers.stubs(:each).returns(:foo,mock())
+    t_reactor.expects(:live_workers).returns(live_workers)
+    @master_worker.expects(:send_object).returns(true)
+    @master_worker.expects(:reactor).returns(t_reactor)
 
+    @master_worker.receive_data(dump_object(f))
   end
 
-  specify "ignore errors if sending request to worker failed" do
-
+  specify "should route worker result requests" do
+    c = {:type=>:get_result, :worker=>:foo_worker, :job_key=>:start_message}
+    @master_worker.receive_data(dump_object(c))
+    @master_worker.outgoing_data.should == {:type=>:get_result, :data=>{:job_key=>:start_message}, :result=>true}
   end
 
-  specify "handle status requests itself" do
-
+  specify "should remove the worker from list if error while fetching results" do
+    c = {:type=>:get_result, :worker=>:foo_worker, :job_key=>:start_message}
+    @master_worker.ask_for_exception(:disconnect)
+    t_reactor = mock()
+    live_workers = mock()
+    live_workers.expects(:delete).returns(true)
+    t_reactor.expects(:live_workers).returns(live_workers)
+    @master_worker.expects(:reactor).returns(t_reactor)
+    @master_worker.receive_data(dump_object(c))
   end
 
-  specify "handle worker information requests itself" do
-
-  end
-
-  specify "ignore errors if sending response back to the client failed" do
-
-  end
-
-  specify "should load proper environment from config file" do
-  end
-
-  specify "log all the errors to the log file" do
-
-  end
-
-  specify "ignore errors if result returned by worker cant be contructed in an object" do
-
-  end
-
-  specify "return appropriate string message if results cant be constructed properly" do
-
+  specify "should ignore generic exceptions while fetching results" do
+    c = {:type=>:get_result, :worker=>:foo_worker, :job_key=>:start_message}
+    @master_worker.ask_for_exception(:generic)
+    @master_worker.receive_data(dump_object(c))
+    @master_worker.outgoing_data.should == nil
   end
 end
-
-a = {:type=>:sync_invoke, :arg=>"boy", :worker=>:foo_worker, :worker_method=>"barbar"}
-b = {:type=>:async_invoke, :arg=>"boy", :worker=>:foo_worker, :worker_method=>"barbar"}
-c = {:type=>:get_result, :worker=>:foo_worker, :job_key=>:start_message}
-# for new worker
-d = {:worker_key=>"boy", :type=>:start_worker, :worker=>:foo_worker}
-
-# for delete worker
-e = {:worker_key=>"boy", :type=>:delete_worker, :worker=>:foo_worker}
-
-# for all worker info
-f = {:type=>:all_worker_info}
-
-# worker info with a worker key
-g = {:worker_key=>"boy", :type=>:worker_info, :worker=>:foo_worker}
-
-# worker info without a key
-h = {:status=>:running, :worker=>:foo_worker, :worker_key=>nil}
-
-
-
