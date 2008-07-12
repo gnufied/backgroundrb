@@ -196,10 +196,15 @@ module BackgrounDRb
 
       Thread.current[:job_key] = user_input[:job_key]
 
-      if called_method_arity != 0
-        result = self.send(user_input[:worker_method],*user_input[:arg])
-      else
-        result = self.send(user_input[:worker_method])
+      begin
+        if called_method_arity != 0
+          result = self.send(user_input[:worker_method],*user_input[:arg])
+        else
+          result = self.send(user_input[:worker_method])
+        end
+      rescue
+        logger.info($!.to_s)
+        logger.info($!.backtrace.join("\n"))
       end
 
       if p_data[:result]
@@ -274,10 +279,15 @@ module BackgrounDRb
         Thread.current[:job_key] = task[:job_key]
         called_method_arity = self.method(task.worker_method).arity
         args = load_data(task.args)
-        if called_method_arity != 0
-          self.send(task.worker_method,*args)
-        else
-          self.send(task.worker_method)
+        begin
+          if called_method_arity != 0
+            self.send(task.worker_method,*args)
+          else
+            self.send(task.worker_method)
+          end
+        rescue
+          logger.info($!.to_s)
+          logger.info($!.backtrace.join("\n"))
         end
       else
         task.release_job
