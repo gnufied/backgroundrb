@@ -10,6 +10,7 @@ namespace :backgroundrb do
     migration_klass = Class.new(ActiveRecord::Migration) do
       def self.up
         create_table :bdrb_job_queues do |t|
+          t.column :args, :binary
           t.column :worker_name, :string
           t.column :worker_method, :string
           t.column :job_key, :string
