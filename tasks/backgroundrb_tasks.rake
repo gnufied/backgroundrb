@@ -4,36 +4,64 @@ namespace :backgroundrb do
     require "erb"
     require "active_record"
     config = YAML.load(ERB.new(IO.read(config_file)).result)
-    env = ENV["env"] || 'development'
-    ActiveRecord::Base.establish_connection(config[env])
+    env = ENV["RAILS_ENV"] || ENV["env"] || 'development'
 
-    table_creation =<<-EOD
-      create table bdrb_job_queues(
-        id integer not null auto_increment primary key,
-        args               blob,
-        worker_name        varchar(255),
-        worker_method      varchar(255),
-        job_key            varchar(255),
-        taken              tinyint,
-        finished           tinyint,
-        timeout            int,
-        priority           int,
-        submitted_at       datetime,
-        started_at         datetime,
-        finished_at        datetime,
-        archived_at        datetime,
-        tag                varchar(255),
-        submitter_info     varchar(255),
-        runner_info        varchar(255),
-        worker_key         varchar(255)
-      ) ENGINE=InnoDB;
-    EOD
-    connection = ActiveRecord::Base.connection
-    begin
-      connection.execute(table_creation)
-    rescue ActiveRecord::StatementInvalid => e
-      #puts e.message
+    ActiveRecord::Base.establish_connection(config[env])
+    migration_klass = Class.new(ActiveRecord::Migration) do
+      def self.up
+        create_table :bdrb_job_queues do |t|
+          t.column :worker_name, :string
+          t.column :worker_method, :string
+          t.column :job_key, :string
+          t.column :taken, :int
+          t.column :finished, :int
+          t.column :timeout, :int
+          t.column :priority, :int
+          t.column :submitted_at, :datetime
+          t.column :started_at, :datetime
+          t.column :finished_at, :datetime
+          t.column :archived_at, :datetime
+          t.column :tag, :string
+          t.column :submitter_info, :string
+          t.column :runner_info, :string
+          t.column :worker_key, :string
+        end
+      end
+
+      def self.down
+        drop_table :bdrb_job_queues
+      end
     end
+
+    migration_klass.up
+
+#     table_creation =<<-EOD
+#       create table bdrb_job_queues(
+#         id integer not null auto_increment primary key,
+#         args               blob,
+#         worker_name        varchar(255),
+#         worker_method      varchar(255),
+#         job_key            varchar(255),
+#         taken              tinyint,
+#         finished           tinyint,
+#         timeout            int,
+#         priority           int,
+#         submitted_at       datetime,
+#         started_at         datetime,
+#         finished_at        datetime,
+#         archived_at        datetime,
+#         tag                varchar(255),
+#         submitter_info     varchar(255),
+#         runner_info        varchar(255),
+#         worker_key         varchar(255)
+#       ) ENGINE=InnoDB;
+#     EOD
+#     connection = ActiveRecord::Base.connection
+#     begin
+#       connection.execute(table_creation)
+#     rescue ActiveRecord::StatementInvalid => e
+#       #puts e.message
+#     end
   end
 
   require 'yaml'
