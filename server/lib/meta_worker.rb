@@ -271,6 +271,7 @@ module BackgrounDRb
       return unless task
       if self.respond_to? task.worker_method
         Thread.current[:persistent_job_id] = task[:id]
+        Thread.current[:job_key] = task[:job_key]
         called_method_arity = self.method(task.worker_method).arity
         args = load_data(task.args)
         if called_method_arity != 0
