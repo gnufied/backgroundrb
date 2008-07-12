@@ -80,6 +80,11 @@ namespace :backgroundrb do
     setup_queue_migration
   end
 
+  desc "Create backgroundrb queue table"
+  task :create_queue do
+    setup_queue_migration
+  end
+
   desc 'update backgroundrb config files from your rails application'
   task :update do
     temp_scripts = ["backgroundrb","load_worker_env.rb"].map {|x| "#{RAILS_ROOT}/script/#{x}"}
