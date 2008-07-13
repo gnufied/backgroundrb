@@ -38,7 +38,7 @@ class BdrbJobQueue < ActiveRecord::Base
     self.class.transaction do
       self.finished = 1
       self.finished_at = Time.now
-      self.save!
+      self.save
     end
   end
 end

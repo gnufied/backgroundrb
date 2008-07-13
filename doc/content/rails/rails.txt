@@ -39,7 +39,8 @@ should read next section (Invoke method and collect results).
 When you invoke @MiddleMan.worker(:foo_worker)@ it returns a worker proxy, hence you can combine above two lines in
 one as follows:
 
-<pre class="boxed">MiddleMan.worker(:foo_worker,<optional_worker_key>).some_task(data) </pre>
+<pre class="multiline">MiddleMan.worker(:foo_worker,<optional_worker_key>).
+     async_some_task(:arg => data) </pre>
 
 Above snippet also demonstrates that, if your worker was started with a @worker_key@ you can use it to
 get correct worker proxy.

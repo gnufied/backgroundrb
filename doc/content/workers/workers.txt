@@ -34,6 +34,17 @@ p(sub-title). Inbuilt instance methods available in your workers:
 * @connect@: Look in "Advanced":/advanced/index.html section. Used to connect to external TCP/IP servers.
 * @start_server@: Look in "Advanced":/advanced/index.html section. Used to start TCP/IP server from worker.
 * @send_data@: Can be used to send objects to master process. You can ignore this method.
+* @job_key@: When you invoke a task from rails by passing a job_key, that job_key can be accessed in workers with @job_key@. For example:
+  From rails:
+  <pre class="boxed"> MiddleMan.worker(:foo_worker).async_some_task(:arg => urls,
+    :job_key => current_user[:id])</pre>
+  Now this @job_key@ can be accessed inside workers with:
+  <pre class="multiline">class FooWorker < BackgrounDRb::MetaWorker
+    def some_task urls
+      .. do some work with urls ..
+      cache[job_key] = result
+    end
+  end</pre>
 
 p(sub-title). Options via class methods :
 
@@ -72,7 +83,7 @@ work as advertised when used from threads(example: Mechanize,Scrubyt)
 
 p(sub-title). Storing result/status objects
 
-All workers can cache results using @cache@ attribute. This status can be then
+All workers can cache results using @cache@ attribute. This result object can be then
 queried from rails using @ask_result@. For example:
 
 <pre class="multiline">class ProgressWorker < BackgrounDRb::MetaWorker
@@ -90,6 +101,53 @@ end</pre>
 And using @MiddleMan@ proxy, you can keep querying the status of progress bar :
 
 <pre class="boxed">MiddleMan.worker(:progress_worker).ask_result(some_key)</pre>
+
+By default, @cache@ is a worker local hash like object, which is used for storing results.
+But if you plan to store lots of objects in cache from your worker, it may not be an
+optimal solution. You can easily replace in-worker cache with memcache.
+
+You need to change @backgroundrb.yml@ file like this, for using memcache for object caching:
+
+<pre class="multiline">:backgroundrb:
+  :ip: 0.0.0.0
+  :port: 11006
+  :result_storage: memcache
+
+:memcache: "10.0.0.1:11211,10.0.0.2:11211" </pre>
+
+Everything else remains the same.
+
+%(entry-title)<a href="persistent_queue">Persistent Task Queue </a>%
+
+BackgrounDRb now have out of box support for persistent job queues which are persisted to the
+database. API to add a task in the job_queue is pretty simple:
+
+<pre class="boxed">MiddleMan(:hello_worker).enq_some_task(:arg => "hello_world",:job_key => "boy")</pre>
+
+So in your hello worker:
+
+<pre class="multiline">
+class HelloWorker
+  def some_task args
+    .. do some work ..
+    persistent_job.finish! #=> marks the job as finished. totally thread safe
+  end
+end</pre>
+
+@persistent_job@ is a thread local variable and will refer to currently
+running queued task can be used from thread pool as well. For example:
+
+<pre class="multiline">
+class HelloWorker
+  def some_task args
+    thread_pool.defer(:fetch_url,args)
+  end
+   def fetch_url tags
+    .. runs in thread ..
+    .. fetch tasks ..
+    persistent_job.finish!
+  end
+end</pre>
 
 %(entry-title)<a href="testing">Testing Workers </a>%
 
