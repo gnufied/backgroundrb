@@ -141,7 +141,7 @@ In your Rails controllers you have access to proxy class @MiddleMan@ which can b
 to interact with BackgrounDRb server, either from Rails controllers/Models or from Rails console.
 For example to invoke @charge_customer@ method asychronously one can use:
 
-<pre class="boxed">MiddleMan.worker(:billing_worker).async_charge_customer(current_customer.id) </pre>
+<pre class="boxed">MiddleMan.worker(:billing_worker).async_charge_customer(:arg => current_customer.id) </pre>
 
 Above code can be also executed from Rails console.
 

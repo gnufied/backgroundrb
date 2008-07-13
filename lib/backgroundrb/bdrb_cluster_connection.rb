@@ -47,6 +47,7 @@ module BackgrounDRb
       end
       @bdrb_servers << klass.new(BDRB_CONFIG[:backgroundrb][:ip],BDRB_CONFIG[:backgroundrb][:port].to_i)
       @bdrb_servers.each_with_index do |connection_info,index|
+        next if @backend_connections.detect { |x| x.server_info == "#{connection_info.ip}:#{connection_info.port}" }
         @backend_connections << Connection.new(connection_info.ip,connection_info.port,self)
       end
     end # end of method establish_connections
