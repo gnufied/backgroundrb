@@ -1,22 +1,22 @@
 <div id="content">
 
-%(entry-title)<a name="introduction"> Workers </a>%     
+%(entry-title)<a name="introduction"> Workers </a>%
 
 Workers are your building blocks of Asynchronous Task Processing. An empty auto generated worker looks like this:
 
 <pre class="multiline">class BillingWorker < BackgrounDRb::MetaWorker
   set_worker_name :billing_worker
   def create(args = nil)
-    # method gets called, when new instance of worker is created.                      
+    # method gets called, when new instance of worker is created.
   end
 end </pre>
 
 @set_worker_name@ will set the worker name which can be later used while invoking tasks on the worker.
-@create@ method gets called when worker is loaded for the first time. If you are starting your worker 
+@create@ method gets called when worker is loaded for the first time. If you are starting your worker
 from rails, you can pass arguments to @create@ method using:
 
 <pre class="multiline">MiddleMan.new_worker(:worker => :billing_worker,\
-     :job_key => user_session,:data => current_user.id) </pre>
+     :worker_key => user_session,:data => current_user.id) </pre>
 
 p(sub-title). Using Workers
 
@@ -26,8 +26,8 @@ for invoking worker tasks from rails.
 
 p(sub-title). Inbuilt instance methods available in your workers:
 
-*(content_list) @register_status@ : Can be used to store random results from worker which can be later retrieved from rails. For example:
-  <pre class="boxed"> register_status(:order_processing => 60) </pre>
+*(content_list) @cache@ : Can be used to store random results from worker which can be later retrieved from rails. For example:
+  <pre class="boxed"> cache[key] = some_data </pre>
 * @add_timer@ : Look in scheduler section
 * @add_periodic_timer@ : Look in scheduler section
 * @thread_pool@ : Look below
@@ -57,25 +57,23 @@ When @reload_on_schedule@ is true, worker won't be loaded while _BackgrounDRb_ s
 
 p(sub-title). Using Thread Pool
 
-Remember _BackgrounDRb_ follows event model of network programming, but sad truth of life is not all networking 
-libraries follow this model and hence they make use of blocking IO and threads. BackgrounDRb allows you to run 
+Remember _BackgrounDRb_ follows event model of network programming, but sad truth of life is not all networking
+libraries follow this model and hence they make use of blocking IO and threads. BackgrounDRb allows you to run
 all such tasks concurrently in threads which are internally managed by BackgrounDRb thread pool.
 
 Each worker has access to object @thread_pool@ which can be used to run task in a thread concurrently.
 
-<pre class="boxed">thread_pool.defer(wiki_scrap_url) { |wiki_url| scrap_wikipedia(wiki_url) }</pre>
+<pre class="boxed">thread_pool.defer(:scrap_wikipedia,scrap_url) </pre>
 
-So whatever task you specify within @scrap_wikipedia@ is going to run concurrently.
+So whatever code you write within @scrap_wikipedia@ method is going to run concurrently.
 
-*WARNING*: You shouldn't try to use @register_status@ method from within the block supplied to defer. 
-Because, if you do that, you can get corrupted result hashes. However, if you are confident, 
-you should wrap your status_hash ( or whatever data type, you are going to store as a status ) in a 
-mutex and then use @register_status@ . It would make sure that, only one thread resisters status at a time. 
+*WARNING*: Many of the Ruby libraries out there aren't thread safe and they may not
+work as advertised when used from threads(example: Mechanize,Scrubyt)
 
 p(sub-title). Storing result/status objects
 
-All workers can log their results with master using @register_status@ method. This status can be then
-queried from rails using @ask_status@. For example:
+All workers can cache results using @cache@ attribute. This status can be then
+queried from rails using @ask_result@. For example:
 
 <pre class="multiline">class ProgressWorker < BackgrounDRb::MetaWorker
   set_worker_name :progress_worker
@@ -85,20 +83,20 @@ queried from rails using @ask_status@. For example:
   end
   def increment_counter
     @counter += 1
-    register_status(@counter)
+    cache[some_key] = counter
   end
 end</pre>
 
 And using @MiddleMan@ proxy, you can keep querying the status of progress bar :
 
-<pre class="boxed">MiddleMan.worker(:progress_worker).ask_status</pre>
+<pre class="boxed">MiddleMan.worker(:progress_worker).ask_result(some_key)</pre>
 
 %(entry-title)<a href="testing">Testing Workers </a>%
 
-_BackgrounDRb_ comes with a baked in mechanism to write test cases. First make sure that you 
+_BackgrounDRb_ comes with a baked in mechanism to write test cases. First make sure that you
 have bdrb_test_helper.rb in the test directory of your rails app (run @rake backgroundrb:setup@, if you dont have one).
 
-Just put your worker test cases in test/unit directory of your rails application and require the helper. Now, you should be good to go. 
+Just put your worker test cases in test/unit directory of your rails application and require the helper. Now, you should be good to go.
 
 <pre class="multiline">require File.join(File.dirname(__FILE__) + "/../bdrb_test_helper")
 require "god_worker"
@@ -108,10 +106,9 @@ require "god_worker"
   end
 end </pre>
 
-All above helper file does is that it stubs out, relevant worker methods, which really need network IO. 
-There can be methods added, which aren't stubbed, for all such methods you are encouraged to stub them and send 
-the patch to the backgroundrb mailing list. 
-
+All above helper file does is that it stubs out, relevant worker methods, which really need network IO.
+There can be methods added, which aren't stubbed, for all such methods you are encouraged to stub them and send
+the patch to the backgroundrb mailing list.
 
 
 </div>

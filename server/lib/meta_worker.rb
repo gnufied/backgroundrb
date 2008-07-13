@@ -198,7 +198,7 @@ module BackgrounDRb
 
       begin
         if called_method_arity != 0
-          result = self.send(user_input[:worker_method],*user_input[:arg])
+          result = self.send(user_input[:worker_method],user_input[:arg])
         else
           result = self.send(user_input[:worker_method])
         end

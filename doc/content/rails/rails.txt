@@ -100,33 +100,57 @@ You can get worker specific information using:
 
 The return value will look something like:
 
-<pre class="boxed">{:worker=>:foo_worker, :status=>:running, :job_key=>"hello"} </pre>
+<pre class="boxed">{:worker=>:foo_worker, :status=>:running, :worker_key=>"hello"} </pre>
 
 Information about all currently running workers can be obtained using:
 
 <pre class="boxed">MiddleMan.all_worker_info </pre>
 
 Return value will look like:
-<pre class="multiline">[{:worker=>:foo_worker, :status=>:running, :job_key=>"hello"}, \
-     {:worker=>:foo_worker, :status=>:running, :job_key=>""}] </pre>
 
-
-</div>
+<pre class="multiline">{"0.0.0.0:11006"=>nil, "0.0.0.0:11008"=>
+[{:worker_key=>"", :status=>:running, :worker=>:log_worker},
+{:worker_key=>"", :status=>:running, :worker=>:foo_worker}]}</pre>
 
 %(entry-title)<a name="newer_api"> BackgrounDRb Clustering </a>%
 
 By using following option in your @backgroundrb.yml@ you can cluster more than
 one backgroundrb server.
+
+
 <pre class="multiline">:backgroundrb:
-  :ip: 0.0.0.0 #ip on which backgroundrb server is running
-  :port: 11006 #port on which backgroundrb server is running
-  :environment: production # rails environment loaded, defaults to development
+  :ip: 0.0.0.0
+  :port: 11006
+  :environment: production
 :client: "10.0.0.1:11006,10.0.0.2:11007"</pre>
+
 
 So what happens here is, now BackgrounDRb client will talk to bdrb
 servers running on both @10.0.0.1:11006@ and @10.0.0.2:11007@. So when you invoke
 a task like this:
+
 <pre class="boxed">MiddleMan.worker(:foo_worker).async_some_task(:arg => data) </pre>
 
 Your task gets executed in round robin manner in specified servers by default.
+Also, once a server goes down, it will automatically stop participating in clustering and
+when it comes back, it will be automatically start participating in clustering.
 
+
+In addition to default round robin task distribution, you can override this behaviour
+by passing additional @:host@ option while invoking task from rails.For example:
+
+
+<pre class="multiline">
+# run method 'some_task' on all backgroundrb servers
+MiddleMan.worker(:hello_worker).async_some_task(:arg => data,
+               :job_key => session[:user_id],:host => :all)
+
+# run method 'some_task' on only locally configured server
+MiddleMan.worker(:hello_worker).async_some_task(:arg => data,
+               :job_key => session[:user_id],:host => :local)
+
+# run the task on specified server
+MiddleMan.worker(:hello_worker).async_some_task(:arg => data,:job_key => \
+               session[:user_id],:host => "10.0.0.2:11210")
+</pre>
+</div>

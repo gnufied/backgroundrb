@@ -80,6 +80,21 @@ context "A Meta Worker should" do
     Thread.current[:job_key].should == nil
   end
 
+  specify "should invoke methods with and without args correctly" do
+    class << @meta_worker
+      attr_accessor :outgoing_data
+      def send_data data
+        @outgoing_data = data
+      end
+    end
+    b = {:data=> {:worker_method=>"baz", :arg => { :name => "bdrb",:age => 10} }, :type=>:request, :result=>true, :client_signature=>9 }
+    # @meta_worker.expects(:send_data).with({:data=>"hello : rails", :type=>:response, :result=>true, :client_signature=>9}).returns("hello : rails")
+    @meta_worker.expects(:baz).with({ :name => "bdrb",:age => 10}).returns("foo")
+    @meta_worker.receive_internal_data(dump_object(b))
+    @meta_worker.outgoing_data[:data].should == "foo"
+    Thread.current[:job_key].should == nil
+  end
+
   specify "for result request" do
     class << @meta_worker
       attr_accessor :t_result
