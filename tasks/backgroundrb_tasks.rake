@@ -33,36 +33,7 @@ namespace :backgroundrb do
         drop_table :bdrb_job_queues
       end
     end
-
     migration_klass.up
-
-#     table_creation =<<-EOD
-#       create table bdrb_job_queues(
-#         id integer not null auto_increment primary key,
-#         args               blob,
-#         worker_name        varchar(255),
-#         worker_method      varchar(255),
-#         job_key            varchar(255),
-#         taken              tinyint,
-#         finished           tinyint,
-#         timeout            int,
-#         priority           int,
-#         submitted_at       datetime,
-#         started_at         datetime,
-#         finished_at        datetime,
-#         archived_at        datetime,
-#         tag                varchar(255),
-#         submitter_info     varchar(255),
-#         runner_info        varchar(255),
-#         worker_key         varchar(255)
-#       ) ENGINE=InnoDB;
-#     EOD
-#     connection = ActiveRecord::Base.connection
-#     begin
-#       connection.execute(table_creation)
-#     rescue ActiveRecord::StatementInvalid => e
-#       #puts e.message
-#     end
   end
 
   require 'yaml'
@@ -106,7 +77,12 @@ namespace :backgroundrb do
       puts "Copying Worker envionment loader file #{worker_env_loader_dest}"
       FileUtils.cp_r(worker_env_loader_src,worker_env_loader_dest)
     end
-    setup_queue_migration
+    begin
+      setup_queue_migration
+    rescue
+      error_msg = $!.message
+      puts error_msg.first(85)
+    end
   end
 
   desc "Create backgroundrb queue table"

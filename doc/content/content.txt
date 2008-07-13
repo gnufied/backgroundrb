@@ -10,21 +10,14 @@ from http request/response cycle.
 
 %(entry-title)<a name="installation"> Installation </a>%
 
-*Update::*
-There was a small error in _BackgrounDRb_ startup script, because of which you may not be
-able to start _BackgrounDRb_ server. Its been fixed in git and svn trunks. Hence, make sure
-that you are running latest code from git or svn trunks. Also, after checking out code from repo,
-don't forget to remove old 'backgroundrb' script from script directory of rails application
-and run @rake backgroundrb:setup@
-
 p(sub-title). Installing the dependencies :
 
-As of version 1.0.3 _BackgrounDRb_ depends on _chronic_ and _packet_ gems. Thus lets get
+As of version 1.0.4 _BackgrounDRb_ depends on _chronic_ and _packet_ gems. Thus lets get
 started by installing these two gems:
 
 <pre class="boxed">sudo gem install chronic packet </pre>
 
-Please note that, this version of _BackgrounDRb_ needs packet version 0.1.5 or greater, so make
+Please note that, this version of _BackgrounDRb_ needs packet version 0.1.7 or greater, so make
 sure you have that.
 
 p(sub-title). Getting the code from Subversion :
@@ -33,7 +26,7 @@ p(sub-title). Getting the code from Subversion :
 
 p(sub-title). Installing from Git:
 
-As of version 1.0.3 __BackgrounDRb__ development has moved to <a href="http://github.com/gnufied/backgroundrb/tree/master">github</a>. Above SVN url
+As of version 1.0.4 __BackgrounDRb__ development has moved to <a href="http://github.com/gnufied/backgroundrb/tree/master">github</a>. Above SVN url
 will always mirror stable releases from Git. However to enjoy latest and greatest of features
 you can install the plugin from git:
 
@@ -45,7 +38,7 @@ Also for running git version of BackgrounDRb you will need, git version of packe
 <pre class="multiline">
 git clone git://github.com/gnufied/packet.git
 cd packet;rake gem
-cd pkg; sudo gem install --local packet-0.1.6.gem</pre>
+cd pkg; sudo gem install --local *.gem</pre>
 
 If you are getting some error while building the gem, probably you need to install RSpec gem.
 
@@ -96,40 +89,9 @@ Following file demonstrates other available configuration options:
   :ip: localhost # host to listen
   :environment: production # rails environment to load
   :log: foreground # foreground mode,print log messages on console
-  :lazy_load: false # load models eagerly
   :debug_log: false # disable log workers and other logging
 :schedules: # optional task scheduling
   : # look in scheduling section </pre>
-
-@lazy_load@ option should be false if you want to pass @ActiveRecord@ model
-objects around, However, this option is generally not encouraged to use,
-because if your model makes use of some other ActiveRecord plugin and
-plugin is not available during load, loading of model will fail. In
-new version of BackgrounDRb its generally discouraged to pass model objects around,
-since they are harder to serialize and deserialize.
-
-It is possible to set options depending on the environment:
-
-<pre class="multiline">
-:backgroundrb:
-  :ip: 0.0.0.0
-
-:development:
-  :backgroundrb:
-    :port: 11111     # use port 11111
-    :log: foreground # foreground mode,print log messages on console
-
-:production:
-  :backgroundrb:
-    :port: 22222      # use port 22222
-    :lazy_load: true  # do not load models eagerly
-    :debug_log: false # disable log workers and other logging </pre>
-
-This will cause @script/backgroundrb@ to use port 11111 and to log to foreground under
-development environment and @script/backgroundrb -e production@ to use port 22222,
-lazy_load and no debug_log under production environment. The ip 0.0.0.0 is used in all
-environments.
-
 
 %(entry-title)<a name="worker"> Workers </a>%
 
@@ -177,9 +139,9 @@ p(sub-title). Invoking Task from Rails :
 
 In your Rails controllers you have access to proxy class @MiddleMan@ which can be used
 to interact with BackgrounDRb server, either from Rails controllers/Models or from Rails console.
-For example to invoke @charge_customer@ method one can use:
+For example to invoke @charge_customer@ method asychronously one can use:
 
-<pre class="boxed">MiddleMan.worker(:billing_worker).charge_customer(current_customer.id) </pre>
+<pre class="boxed">MiddleMan.worker(:billing_worker).async_charge_customer(current_customer.id) </pre>
 
 Above code can be also executed from Rails console.
 

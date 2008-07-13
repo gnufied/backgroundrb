@@ -4,14 +4,9 @@
 
 BackgrounDRb offers seemless integration with rails. You can invoke random tasks defined in your
 workers from rails. You can pass arguments, collect results, monitor status of workers and other
-statistics.
+stuff.
 
-BackgrounDRb offers two sets of APIs for interacting with workers from rails. One is newer, slicker
-set and other is older legacy compatibility API. 1.0.3 version made a departure and implemented newer
-cleaner APIs, we will discuss them first, before getting acquinted with older API. Also, no matter
-which API you are using @MiddleMan@ is the proxy object that lets you handle all this.
-
-%(entry-title)<a name="newer_api"> Newer API </a>%
+%(entry-title)<a name="newer_api"> BackgrounDRb Client API </a>%
 
 p(sub-title). Invoke an asynchronous task on a worker :
 
@@ -34,7 +29,7 @@ Following snippet will invoke method @some_task@ with argument @data@ in @foo_wo
 be invoked asychrounously and Rails won't wait for result from BackgrounDRb server.
 
 <pre class="multiline">worker = MiddleMan.worker(:foo_worker)
-worker.some_task(data) </pre>
+worker.async_some_task(:arg => data) </pre>
 
 It should be noted that, since @some_task@ method is being
 executed asyhcrounously, don't expect any meaningful return values from method invocation.
@@ -44,9 +39,9 @@ should read next section (Invoke method and collect results).
 When you invoke @MiddleMan.worker(:foo_worker)@ it returns a worker proxy, hence you can combine above two lines in
 one as follows:
 
-<pre class="boxed">MiddleMan.worker(:foo_worker,<optional_job_key>).some_task(data) </pre>
+<pre class="boxed">MiddleMan.worker(:foo_worker,<optional_worker_key>).some_task(data) </pre>
 
-Above snippet also demonstrates that, if your worker was started with a @job_key@ you can use it to
+Above snippet also demonstrates that, if your worker was started with a @worker_key@ you can use it to
 get correct proper worker proxy.
 
 p(sub-title). Invoke a method on worker and get results :
@@ -55,7 +50,7 @@ Following snippet will invoke method @some_task@ with argument @data@ in @foo_wo
 until BackgrounDRb server returns a result.
 
 <pre class="multiline">worker = MiddleMan.worker(:foo_worker)
-result = worker.some_task(data,true) </pre>
+result = worker.some_task(:arg => data) </pre>
 
 Since, now you are expecting a return value from your worker method, new worker code will look like:
 
@@ -72,7 +67,7 @@ Since, now you are expecting a return value from your worker method, new worker 
 end
 </pre>
 
-As illustrated above, you can use @job_key@ or make them in single line too. When you are invoking a method
+As illustrated above, you can use @worker_key@ or make them in single line too. When you are invoking a method
 on your worker first optional argument will be passed to your worker method and second optional argument @true|false@
 indicates whether we should wait for result from _BackgrounDRb_ server or not.
 
