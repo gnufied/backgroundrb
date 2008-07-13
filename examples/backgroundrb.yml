@@ -13,8 +13,7 @@
 # following section is totally optional, and only useful if you are trying to cluster of backgroundrb server
 # if you do not specify this section backgroundrb will assume that, from rails you are connecting to the
 # backgroundrb server which has been specified in previous section
-:client:
-  :drb_servers: "10.0.0.1:11006,10.0.0.2:11007"
+:client: "10.0.0.1:11006,10.0.0.2:11007"
 
 # You specify your worker schedules here
 :schedules:
