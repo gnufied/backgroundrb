@@ -281,7 +281,7 @@ module BackgrounDRb
         args = load_data(task.args)
         begin
           if called_method_arity != 0
-            self.send(task.worker_method,*args)
+            self.send(task.worker_method,args)
           else
             self.send(task.worker_method)
           end
