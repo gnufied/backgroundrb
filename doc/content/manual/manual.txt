@@ -1,6 +1,0 @@
-<div id="content">
-
-Will have a link to RDoc generated documentation 
-
-</div>
-
