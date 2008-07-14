@@ -1,4 +1,4 @@
-filters_pre: [ "textile" ]
+filters_pre: [ "redcloth" ]
 # Custom
 title: "Advanced Stuff"
 
