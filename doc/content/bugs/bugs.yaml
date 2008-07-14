@@ -1,5 +1,5 @@
 # Built-in
-filters_pre: "textile"
+filters_pre: [ "textile" ]
 # Custom
 title: "Report Bugs"
 sidebar_items: [["Trac", "#trac"], ["KnownBugs", "#known_bugs"]]

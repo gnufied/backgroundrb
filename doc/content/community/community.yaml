@@ -1,5 +1,5 @@
 # Built-in
-filters_pre: "textile"
+filters_pre: [ "textile" ]
 # Custom
 title: "Join the BackgrounDRb Community"
 sidebar_items: [["People", "people"], ["MailingList", "#mailing_list"], ["IRC", "#irc"], ["Contribute", "#contribute"]]
