@@ -2,7 +2,7 @@
 
 %(entry-title)<a name="introduction"> Introduction </a>%
 
-BackgrounDRb offers seemless integration with rails. You can invoke random tasks defined in your
+BackgrounDRb offers seamless integration with rails. You can invoke random tasks defined in your
 workers from rails. You can pass arguments, collect results, monitor status of workers and other
 stuff.
 
@@ -26,13 +26,13 @@ end
 
 And you want to invoke @some_task@ method with appropriate arguments from rails.
 Following snippet will invoke method @some_task@ with argument @data@ in @foo_worker@. Also, method will
-be invoked asychrounously and Rails won't wait for result from BackgrounDRb server.
+be invoked asynchronously and Rails won't wait for result from BackgrounDRb server.
 
 <pre class="multiline">worker = MiddleMan.worker(:foo_worker)
 worker.async_some_task(:arg => data) </pre>
 
 It should be noted that, since @some_task@ method is being
-executed asyhcrounously, don't expect any meaningful return values from method invocation.
+executed asynchronously, don't expect any meaningful return values from method invocation.
 If you want to invoke a method on worker and collect results returned by it, you
 should read next section (Invoke method and collect results).
 

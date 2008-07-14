@@ -22,7 +22,7 @@ module BackgrounDRb
     end
   end
   # == MetaWorker class
-  # BackgrounDRb workers are asynchrounous reactors which work using events
+  # BackgrounDRb workers are asynchronous reactors which work using events
   # You are free to use threads in your workers, but be reasonable with them.
   # Following methods are available to all workers from parent classes.
   # * BackgrounDRb::MetaWorker#connect
@@ -213,7 +213,7 @@ module BackgrounDRb
       end
     end
 
-    # can the respones be dumped?
+    # can the responses be dumped?
     def can_dump?(p_object)
       begin
         Marshal.dump(p_object)
