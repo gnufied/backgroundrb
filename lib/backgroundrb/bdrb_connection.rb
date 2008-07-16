@@ -148,7 +148,7 @@ module BackgrounDRb
         bdrb_response = nil
         @mutex.synchronize { bdrb_response = read_from_bdrb() }
         close_connection
-        return bdrb_response[:data]
+        bdrb_response ? bdrb_response[:data] : nil
       end
     end
 

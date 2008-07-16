@@ -4,13 +4,10 @@ require File.join(File.dirname(__FILE__) + "/../bdrb_client_test_helper")
 context "For Cluster connection" do
   class BackgrounDRb::Connection
     attr_accessor :server_ip,:server_port,:cluster_conn,:connection_status
-    def initialize ip,port,cluster_connection
-      @server_ip = ip
-      @server_port = port
-    end
     def establish_connection
       @connection_status = true
     end
+
     def close_connection
       @connection_status = false
     end
@@ -106,10 +103,6 @@ end
 context "For single connections" do
   class BackgrounDRb::Connection
     attr_accessor :server_ip,:server_port,:cluster_conn,:connection_status
-    def initialize ip,port,cluster_connection
-      @server_ip = ip
-      @server_port = port
-    end
   end
 
   setup do
