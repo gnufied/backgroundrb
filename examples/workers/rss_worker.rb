@@ -9,15 +9,17 @@ class RssWorker < BackgrounDRb::MetaWorker
   # method would fetch supplied urls in a thread
   def fetch_url(url)
     puts "fetching url #{url}"
-    thread_pool.defer(url) do |url|
-      begin
-        data = Net::HTTP.get('www.example.com','/')
-        File.open("#{RAILS_ROOT}/log/pages.txt","w") do |fl|
-          fl.puts(data)
-        end
-      rescue
-        logger.info "Error downloading page"
+    thread_pool.defer(:scrap_things,url)
+  end
+
+  def scrap_things url
+    begin
+      data = Net::HTTP.get(url,"/")
+      File.open("#{RAILS_ROOT}/log/pages.txt","w") do |fl|
+        fl.puts(data)
       end
+    rescue
+      logger.info "Error downloading page"
     end
   end
 end

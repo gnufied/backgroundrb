@@ -23,11 +23,11 @@ class FooWorker < BackgrounDRb::MetaWorker
   end
 
   def get_external_data(p_data)
-    register_status(p_data)
+    cache[some_key] = p_data
   end
 
   def foobar
-    register_status("Hello #{Time.now}")
+    cache[some_key] = "Time is now : #{Time.now}"
   end
 
   def barbar(data)

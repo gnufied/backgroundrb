@@ -8,29 +8,33 @@ class FooController < ApplicationController
   end
 
   def start_worker
-    MiddleMan.new_worker(:worker => :error_worker, :job_key => :hello_world,:data => "wow_man",:schedule => { :hello_world => { :trigger_args => "*/5 * * * * * *",:data => "hello_world" }})
+    MiddleMan.new_worker(:worker => :error_worker, :worker_key => :hello_world,:data => "wow_man")
     render :text => "worker starterd"
   end
 
   def stop_worker
-    MiddleMan.delete_worker(:worker => :error_worker, :job_key => :hello_world)
+    MiddleMan.worker(:error_worker,:hello_world).delete
     render :text => "worker deleted"
   end
 
   def invoke_worker_method
-    worker_response = MiddleMan.send_request(:worker => :world_worker, :worker_method => :hello_world)
+    worker_response = MiddleMan.worker(:hello_worker).say_hello(:arg => data)
     render :text => worker_response
   end
 
   def renew
-    MiddleMan.ask_work(:worker => :renewal_worker, :worker_method => :load_policies)
+    MiddleMan.worker(:hello_worker).async_load_policy(:arg => current_user.id)
     render :text => "method invoked"
   end
 
-  def ask_status
+  def query_all_workers
     t_response = MiddleMan.query_all_workers
     running_workers = t_response.map { |key,value| "#{key} = #{value}"}.join(',')
     render :text => running_workers
+  end
+
+  def ask_result
+    t_result = MiddleMan.worker(:hello_worker).ask_result(cache_key)
   end
 
   private
