@@ -88,7 +88,8 @@ context "For Cluster connection" do
     @cluster_connection.backend_connections.each do |t_conn|
       t_conn.expects(:new_worker).with(:worker => :hello_worker,:worker_key => "boy",:data => "boy").returns(true)
     end
-    @cluster_connection.new_worker(:worker => :hello_worker,:worker_key => "boy",:data => "boy")
+    a = @cluster_connection.new_worker(:worker => :hello_worker,:worker_key => "boy",:data => "boy")
+    a.should == "boy"
   end
 
   specify "should work with all worker info methods" do
