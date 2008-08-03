@@ -83,6 +83,11 @@ work as advertised when used from threads(example: Mechanize,Scrubyt)
 
 p(sub-title). Storing result/status objects
 
+<b>Update : </b> <em>Using MemCache to store result objects is strongly recommended. Inbuilt cache works, but may give
+unpredictable results. Also, using Memcache serves as an out of process cache, which can be queried at any time.
+If your worker is doing some processing, inbuilt cache may not return result until worker picks up that request.</em>
+
+
 All workers can cache results using @cache@ attribute. This result object can be then
 queried from rails using @ask_result@. For example:
 
