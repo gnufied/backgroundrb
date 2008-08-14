@@ -91,6 +91,8 @@ Following file demonstrates other available configuration options:
   :environment: production # rails environment to load
   :log: foreground # foreground mode,print log messages on console
   :debug_log: false # disable log workers and other logging
+  :persistent_disabled: false # turn this off if your application doesn't use backgroundrb's persistent/enqueued tasks system
+  :persistent_delay: 10 # the time (seconds) between each time backgroundrb checks the database for enqueued tasks
 :schedules: # optional task scheduling
   : # look in scheduling section </pre>
 

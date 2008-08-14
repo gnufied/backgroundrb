@@ -133,7 +133,9 @@ module BackgrounDRb
         create_arity = method(:create).arity
         (create_arity == 0) ? create : create(worker_options[:data])
       end
-      add_periodic_timer(5) { check_for_enqueued_tasks }
+      return if BDRB_CONFIG[:backgroundrb][:persistent_disabled]
+      delay = BDRB_CONFIG[:backgroundrb][:persistent_delay] || 5
+      add_periodic_timer(delay.to_i) { check_for_enqueued_tasks }
     end
 
     # return job key from thread global variable
