@@ -24,7 +24,7 @@ module BackgrounDRb
     def self.read_config(config_file)
       config = YAML.load(ERB.new(IO.read(config_file)).result)
       environment = ENV["RAILS_ENV"] || config[:backgroundrb][:environment] || "development"
-      Object.const_set("RAILS_ENV",environment) unless defined?(RAILS_ENV)
+      Object.const_set("RAILS_ENV",environment)
       ENV["RAILS_ENV"] = environment
       config
     end
