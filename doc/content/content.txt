@@ -33,14 +33,7 @@ you can install the plugin from git:
 <pre class="multiline">
 git clone git://github.com/gnufied/backgroundrb.git </pre>
 
-Also for running git version of BackgrounDRb you will need, git version of packet.
-
-<pre class="multiline">
-git clone git://github.com/gnufied/packet.git
-cd packet;rake gem
-cd pkg; sudo gem install --local *.gem</pre>
-
-If you are getting some error while building the gem, probably you need to install RSpec gem.
+<p style="text-decoration: line-through;"> Also for running git version of BackgrounDRb you will need, git version of packet.</p>
 
 p(sub-title). Installation using Piston
 
