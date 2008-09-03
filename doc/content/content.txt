@@ -41,10 +41,12 @@ p(sub-title). Installation using Piston
 
 %(entry-title)<a name="configuration"> Configuration </a>%
 
-After getting the plugin, you must configure it for use. _BackgrounDRb_ comes with a rake task
-for automating plugin configuration. Before running rake task, remove if any old 'backgroundrb'
-script is there in script folder of your rails app after that run, following command from
-root directory of your rails application, after installation:
+After getting the plugin, you must copy it into your vendor/rails and
+then configure it for use. _BackgrounDRb_ comes with a rake task for
+automating plugin configuration. Before running rake task, remove if
+any old @backgroundrb@ or @load_worker_env.rb@ script is there in script folder of your rails
+app after that run, following command from root directory of your
+rails application:
 
 <pre class="boxed">rake backgroundrb:setup </pre>
 
