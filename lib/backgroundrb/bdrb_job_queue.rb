@@ -4,9 +4,10 @@ class BdrbJobQueue < ActiveRecord::Base
     returned_job = nil
     transaction do
       unless worker_key
-        t_job = find(:first,:conditions => { :worker_name => worker_name,:taken => 0},:lock => true)
+        #use ruby time stamps for time calculations as db might have different times than what is calculated by ruby/rails
+        t_job = find(:first,:conditions => [" worker_name = ? AND taken = ? AND scheduled_at <= ? ", worker_name, 0, Time.now.utc ],:lock => true)
       else
-        t_job = find(:first,:conditions => { :worker_name => worker_name,:taken => 0,:worker_key => worker_key },:lock => true)
+        t_job = find(:first,:conditions => [" worker_name = ? AND taken = ? AND worker_key = ? AND scheduled_at <= ? ", worker_name, 0, worker_key, Time.now.utc ],:lock => true)
       end
       if t_job
         t_job.taken = 1
@@ -34,12 +35,23 @@ class BdrbJobQueue < ActiveRecord::Base
     end
   end
 
+  def self.remove_job(options = { })
+    transaction do
+      t_job_id = find(:first, :conditions => options.merge(:finished => 0,:taken => 0),:lock => true)
+      delete(t_job_id)
+    end
+  end
+
   def finish!
     self.class.transaction do
       self.finished = 1
       self.finished_at = Time.now
+      self.job_key = "finished_#{Time.now.to_i}_#{job_key}"
       self.save
     end
+    Thread.current[:persistent_job_id] = nil
+    Thread.current[:job_key] = nil
+    nil
   end
 end
 

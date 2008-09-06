@@ -1,5 +1,5 @@
 namespace :backgroundrb do
-  def setup_queue_migration
+  def generate_queue_migration
     config_file = "#{RAILS_ROOT}/config/database.yml"
     require "erb"
     require "active_record"
@@ -22,6 +22,7 @@ namespace :backgroundrb do
           t.column :started_at, :datetime
           t.column :finished_at, :datetime
           t.column :archived_at, :datetime
+          t.column :scheduled_at, :datetime
           t.column :tag, :string
           t.column :submitter_info, :string
           t.column :runner_info, :string
@@ -33,7 +34,17 @@ namespace :backgroundrb do
         drop_table :bdrb_job_queues
       end
     end
-    migration_klass.up
+    migration_klass
+  end
+
+  def setup_queue_migration
+    generate_queue_migration.up
+  end
+
+  def redo_queue_migration
+    klass = generate_queue_migration
+    klass.down
+    klass.up
   end
 
   require 'yaml'
@@ -88,6 +99,11 @@ namespace :backgroundrb do
   desc "Create backgroundrb queue table"
   task :create_queue do
     setup_queue_migration
+  end
+
+  desc "Drops and recreate backgroundrb queue table"
+  task :redo_queue do
+    redo_queue_migration
   end
 
   desc 'update backgroundrb config files from your rails application'

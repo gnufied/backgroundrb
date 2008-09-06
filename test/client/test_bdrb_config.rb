@@ -11,9 +11,10 @@ context "For BackgrounDRb config" do
   end
 
   specify "should setup correct environment from conf file" do
+    ENV["RAILS_ENV"] = nil
     BackgrounDRb::Config.parse_cmd_options([])
     BackgrounDRb::Config.read_config(conf_file)
-    ENV["RAILS_ENV"].should == "production"
-    RAILS_ENV.should == "production"
+    ENV["RAILS_ENV"].should == "development"
+    RAILS_ENV.should == "development"
   end
 end
