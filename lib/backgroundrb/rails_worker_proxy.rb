@@ -57,7 +57,7 @@ module BackgrounDRb
       elsif host_info == :all
         succeeded = false
         begin
-          connection.each { |conn| result << invoke_on_connection(connection,method_name,worker_options) }
+          connection.each { |conn| result << invoke_on_connection(conn,method_name,worker_options) }
           succeeded = true
         rescue BdrbConnError; end
         raise NoServerAvailable.new("No BackgrounDRb server is found running") unless succeeded

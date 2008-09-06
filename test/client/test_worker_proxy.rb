@@ -84,4 +84,18 @@ context "Worker Proxy in general" do
     end
     @worker_proxy.deq_foobar(:job_key => "catz")
   end
+
+  specify "should run task on all servers if asked" do
+    backend_connections = []
+    2.times { |i|
+      actual_conn = mock()
+      actual_conn.expects(:ask_work).with(:worker => :hello_worker,:worker_method => 'foobar',:job_key => 'hello')
+      backend_connections << actual_conn
+    }
+    @cluster_conn.expects(:backend_connections).returns(backend_connections)
+    a = @worker_proxy.async_foobar(:job_key => "hello",:host => :all)
+  end
+
+  specify "should switch connections if invoke fails on chosen one" do
+  end
 end
