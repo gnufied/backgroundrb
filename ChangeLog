@@ -1,3 +1,9 @@
+2008-09-07  hemant kumar  <hemant@shire.com>
+
+        * Commit patch by P Baker, related to scheduling a persistent task at specified time. For example:
+        MiddleMan(:hello_worker).enq_some_task(:arg => "hello_world",
+                        :job_key => "boy",:scheduled_at => (Time.now + 1.hour))
+
 2008-06-19  hemant kumar  <hemant@shire.com>
 
         * Make binary parser iterative and hence won't blow your stack
