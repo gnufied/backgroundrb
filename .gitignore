@@ -9,3 +9,4 @@ doc/output/scheduling
 doc/output/workers
 doc/output/index.html
 coverage
+.dotest
