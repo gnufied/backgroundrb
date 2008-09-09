@@ -98,7 +98,7 @@ module BackgrounDRb
       begin
         require worker_name.to_s
         worker_key = Packet::Guid.hexdigest
-        @reactor.start_worker(:worker => worker_name,:worker_key => worker_key)
+        @reactor.start_worker(:worker => worker_name,:worker_key => worker_key,:disable_log => true)
         worker_name_key = gen_worker_key(worker_name,worker_key)
         data_request = {:data => { :worker_method => p_method,:arg => data[:data]},
           :type => :request, :result => false
