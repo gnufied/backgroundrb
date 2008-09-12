@@ -1,41 +1,4 @@
 namespace :backgroundrb do
-  def setup_queue_migration
-    config_file = "#{RAILS_ROOT}/config/database.yml"
-    require "erb"
-    require "active_record"
-    config = YAML.load(ERB.new(IO.read(config_file)).result)
-    env = ENV["RAILS_ENV"] || ENV["env"] || 'development'
-
-    ActiveRecord::Base.establish_connection(config[env])
-    migration_klass = Class.new(ActiveRecord::Migration) do
-      def self.up
-        create_table :bdrb_job_queues do |t|
-          t.column :args, :binary
-          t.column :worker_name, :string
-          t.column :worker_method, :string
-          t.column :job_key, :string
-          t.column :taken, :int
-          t.column :finished, :int
-          t.column :timeout, :int
-          t.column :priority, :int
-          t.column :submitted_at, :datetime
-          t.column :started_at, :datetime
-          t.column :finished_at, :datetime
-          t.column :archived_at, :datetime
-          t.column :tag, :string
-          t.column :submitter_info, :string
-          t.column :runner_info, :string
-          t.column :worker_key, :string
-        end
-      end
-
-      def self.down
-        drop_table :bdrb_job_queues
-      end
-    end
-    migration_klass.up
-  end
-
   require 'yaml'
   desc 'Setup backgroundrb in your rails application'
   task :setup do
@@ -77,17 +40,9 @@ namespace :backgroundrb do
       puts "Copying Worker envionment loader file #{worker_env_loader_dest}"
       FileUtils.cp_r(worker_env_loader_src,worker_env_loader_dest)
     end
-    begin
-      setup_queue_migration
-    rescue
-      error_msg = $!.message
-      puts error_msg.first(85)
-    end
-  end
 
-  desc "Create backgroundrb queue table"
-  task :create_queue do
-    setup_queue_migration
+    # Generate the migration
+    Rake::Task['backgroundrb:queue_migration'].invoke
   end
 
   desc 'update backgroundrb config files from your rails application'
@@ -104,6 +59,15 @@ namespace :backgroundrb do
       puts "Updating file #{File.expand_path(file_name)} ..."
       FileUtils.cp_r(file_name,"#{RAILS_ROOT}/script/")
     end
+  end
+
+  desc 'Generate a migration for the backgroundrb queue table.  The migration name can be ' +
+    'specified with the MIGRATION environment variable.'
+  task :queue_migration => :environment do
+    raise "Task unavailable to this database (no migration support)" unless ActiveRecord::Base.connection.supports_migrations?
+    require 'rails_generator'
+    require 'rails_generator/scripts/generate'
+    Rails::Generator::Scripts::Generate.new.run(['bdrb_migration', ENV['MIGRATION'] || 'CreateBackgroundrbQueueTable'])
   end
 
   desc 'Remove backgroundrb from your rails application'

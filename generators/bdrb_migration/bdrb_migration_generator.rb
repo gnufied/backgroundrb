@@ -1,6 +1,6 @@
 class BdrbMigrationGenerator < Rails::Generator::NamedBase
   def initialize(runtime_args, runtime_options = {})
-    runtime_args << 'add_bdrb_job_queue_table' if runtime_args.empty?
+    runtime_args << 'CreateBackgroundrbQueueTable' if runtime_args.empty?
     super
   end
 
