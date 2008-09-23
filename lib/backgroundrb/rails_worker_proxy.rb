@@ -13,7 +13,8 @@ module BackgrounDRb
       worker_method = method_id.to_s
       arguments = args.first
 
-      arg,job_key,host_info = arguments && arguments.values_at(:arg,:job_key,:host)
+      arg,job_key,host_info,scheduled_at = arguments && arguments.values_at(:arg,:job_key,:host,:scheduled_at)
+      new_schedule = (scheduled_at && scheduled_at.respond_to?(:utc)) ? scheduled_at.utc : Time.now.utc
 
       if worker_method =~ /^async_(\w+)/
         method_name = $1
@@ -26,7 +27,12 @@ module BackgrounDRb
         marshalled_args = Marshal.dump(arg)
         enqueue_task(compact(:worker_name => worker_name.to_s,:worker_key => worker_key.to_s,
                              :worker_method => method_name.to_s,:job_key => job_key.to_s,
-                             :args => marshalled_args,:timeout => arguments ? arguments[:timeout] : nil))
+                             :args => marshalled_args,:timeout => arguments ? arguments[:timeout] : nil,:scheduled_at => new_schedule))
+       elsif worker_method =~ /^deq_(\w+)/i
+        raise NoJobKey.new("Must specify a job key to dequeue tasks") if job_key.blank?
+        method_name = $1
+        dequeue_task(compact(:worker_name => worker_name.to_s,:worker_key => worker_key.to_s,
+                             :worker_method => method_name.to_s,:job_key => job_key.to_s))
       else
         worker_options = compact(:worker => worker_name,:worker_key => worker_key,
                                  :worker_method => worker_method,:job_key => job_key,:arg => arg)
@@ -38,6 +44,10 @@ module BackgrounDRb
       BdrbJobQueue.insert_job(options)
     end
 
+    def dequeue_task options = {}
+      BdrbJobQueue.remove_job(options)
+    end
+
     def run_method host_info,method_name,worker_options = {}
       result = []
       connection = choose_connection(host_info)
@@ -47,7 +57,7 @@ module BackgrounDRb
       elsif host_info == :all
         succeeded = false
         begin
-          connection.each { |conn| result << invoke_on_connection(connection,method_name,worker_options) }
+          connection.each { |conn| result << invoke_on_connection(conn,method_name,worker_options) }
           succeeded = true
         rescue BdrbConnError; end
         raise NoServerAvailable.new("No BackgrounDRb server is found running") unless succeeded

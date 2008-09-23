@@ -79,6 +79,25 @@ rails using:
 
 You can as usual use @worker_key@ if *worker was started with a worker_key*.
 
+p(sub-title). Enqueue task to the persistent job queue :
+
+Jobs executed via synchronous and asynchronous APIs are fine, but these tasks are usually
+kept in memory(and hence they are fast) and hence aren't entirely failsafe.
+
+To solve this _BackgrounDRb_ also lets you add jobs to a persistent job queue, which is
+automatically picked by responsible worker and invoked. To use this:
+
+<pre class="boxed">MiddleMan(:hello_worker).enq_some_task(:arg => "hello_world",:job_key => "boy")</pre>
+
+With _BackgrounDRb_ version >= 1.1, you can also schedule a persistent task to be executed at a particular time,
+
+<pre class="multiline">MiddleMan(:hello_worker).enq_some_task(:arg => "hello_world",
+                      :job_key => "boy",:scheduled_at => (Time.now + 1.hour))</pre>
+
+Above line will add specified task to the job queue and set to be invoked at specified time. For more information
+about scheduling see scheduling section.
+
+
 p(sub-title). Start a Worker :
 
 To start a worker from rails:

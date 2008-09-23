@@ -154,6 +154,7 @@ class HelloWorker
   end
 end</pre>
 
+
 %(entry-title)<a href="testing">Testing Workers </a>%
 
 _BackgrounDRb_ comes with a baked in mechanism to write test cases. First make sure that you

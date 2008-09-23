@@ -13,11 +13,6 @@ Copyright (c) 2006 Ezra Zygmuntowicz,skaar[at]waste[dot]org,
 Copyright (c) 2007 Hemant Kumar (gethemant [at] gmail.com )
 
 
-== Notes
-
-   If you are using UNIX styled scheduler and using activesupport helpers in yaml file, please note that,
-   that will not work currently, because activesupport gem is not loaded before reading yaml file.
-
 == Usage
 
 Please look into http://backgroundrb.rubyforge.org

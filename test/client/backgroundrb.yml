@@ -3,7 +3,7 @@
   :ip: 0.0.0.0
   :port: 11008
   :log: foreground
-  :environment: production
+  :environment: development
   :result_storage: memcache
 
 :memcache: "localhost:11211"

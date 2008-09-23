@@ -45,6 +45,11 @@ namespace :backgroundrb do
     Rake::Task['backgroundrb:queue_migration'].invoke
   end
 
+  desc "Drops and recreate backgroundrb queue table"
+  task :redo_queue do
+    redo_queue_migration
+  end
+
   desc 'update backgroundrb config files from your rails application'
   task :update do
     temp_scripts = ["backgroundrb","load_worker_env.rb"].map {|x| "#{RAILS_ROOT}/script/#{x}"}

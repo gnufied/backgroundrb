@@ -5,20 +5,27 @@ module BackgrounDRb
     def initialize(worker,log_flag = true)
       @log_flag = log_flag
       @worker = worker
+      @log_mutex = Mutex.new
     end
     def info(p_data)
       return unless @log_flag
-      @worker.send_request(:worker => :log_worker, :data => p_data)
+      @log_mutex.synchronize do
+        @worker.send_request(:worker => :log_worker, :data => p_data)
+      end
     end
 
     def debug(p_data)
       return unless @log_flag
-      @worker.send_request(:worker => :log_worker, :data => p_data)
+      @log_mutex.synchronize do
+        @worker.send_request(:worker => :log_worker, :data => p_data)
+      end
     end
 
     def error(p_data)
       return unless @log_flag
-      @worker.send_request(:worker => :log_worker, :data => p_data)
+      @log_mutex.synchronize do
+        @worker.send_request(:worker => :log_worker, :data => p_data)
+      end
     end
   end
   # == MetaWorker class
