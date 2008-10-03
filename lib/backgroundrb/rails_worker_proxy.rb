@@ -1,7 +1,9 @@
 module BackgrounDRb
+  # A Worker proxy, which uses +method_missing+ for delegating method calls to the workers
   class RailsWorkerProxy
     attr_accessor :worker_name, :worker_method, :data, :worker_key,:middle_man
 
+    # create new worker proxy
     def initialize(p_worker_name,p_worker_key = nil,p_middle_man = nil)
       @worker_name = p_worker_name
       @middle_man = p_middle_man
@@ -40,14 +42,17 @@ module BackgrounDRb
       end
     end
 
+    # enqueue tasks to the worker pool
     def enqueue_task options = {}
       BdrbJobQueue.insert_job(options)
     end
 
+    # remove tasks from the worker pool
     def dequeue_task options = {}
       BdrbJobQueue.remove_job(options)
     end
 
+    # invoke method on worker
     def run_method host_info,method_name,worker_options = {}
       result = []
       connection = choose_connection(host_info)
@@ -75,11 +80,14 @@ module BackgrounDRb
       return_result(result)
     end
 
+    # choose a backgroundrb server connection and invoke worker method on it.
     def invoke_on_connection connection,method_name,options = {}
       raise NoServerAvailable.new("No BackgrounDRb is found running") unless connection
       connection.send(method_name,options)
     end
 
+    # get results back from the cache. Cache can be in-memory worker cache or memcache
+    # based cache
     def ask_result job_key
       options = compact(:worker => worker_name,:worker_key => worker_key,:job_key => job_key)
       if BDRB_CONFIG[:backgroundrb][:result_storage] == 'memcache'
@@ -90,19 +98,30 @@ module BackgrounDRb
       end
     end
 
+    # return runtime information about worker
     def worker_info
       t_connections = middle_man.backend_connections
       result = t_connections.map { |conn| conn.worker_info(compact(:worker => worker_name,:worker_key => worker_key)) }
       return_result(result)
     end
 
+    # generate worker key
     def gen_key options
       key = [options[:worker],options[:worker_key],options[:job_key]].compact.join('_')
       key
     end
 
+    # return result from memcache
     def return_result_from_memcache options = {}
       middle_man.cache[gen_key(options)]
+    end
+
+    # reset result within memcache for given key
+    def reset_memcache_result(job_key,value)
+      options = compact(:worker => worker_name,:worker_key => worker_key,:job_key => job_key)
+      key = gen_key(options)
+      middle_man.cache[key] = value
+      value
     end
 
     def return_result result
@@ -110,6 +129,7 @@ module BackgrounDRb
       result.size <= 1 ? result[0] : result
     end
 
+    # delete a worker
     def delete
       middle_man.backend_connections.each do |connection|
         connection.delete_worker(compact(:worker => worker_name, :worker_key => worker_key))
@@ -117,6 +137,7 @@ module BackgrounDRb
       return worker_key
     end
 
+    # choose a worker
     def choose_connection host_info
       case host_info
       when :all; middle_man.backend_connections
@@ -126,6 +147,7 @@ module BackgrounDRb
       end
     end
 
+    # helper method to compact a hash and for getting rid of nil parameters
     def compact(options = { })
       options.delete_if { |key,value| value.nil? }
       options

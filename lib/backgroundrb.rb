@@ -16,7 +16,7 @@ require "backgroundrb/bdrb_conn_error"
 require "backgroundrb/rails_worker_proxy"
 require "backgroundrb/bdrb_connection"
 require "backgroundrb/bdrb_cluster_connection"
-
+require "backgroundrb/bdrb_start_stop"
 MiddleMan = BackgrounDRb::ClusterConnection.new
 
 

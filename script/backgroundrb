@@ -26,45 +26,14 @@ require RAILS_HOME + "/config/environment"
 require "bdrb_job_queue"
 require "backgroundrb_server"
 
-pid_file = "#{RAILS_HOME}/tmp/pids/backgroundrb_#{BDRB_CONFIG[:backgroundrb][:port]}.pid"
+PID_FILE = "#{RAILS_HOME}/tmp/pids/backgroundrb_#{BDRB_CONFIG[:backgroundrb][:port]}.pid"
 SERVER_LOGGER = "#{RAILS_HOME}/log/backgroundrb_debug_#{BDRB_CONFIG[:backgroundrb][:port]}.log"
 
-case ARGV[0]
-when 'start'
-  if fork
-    sleep(5)
-    exit
-  else
-    op = File.open(pid_file, "w")
-    op.write(Process.pid().to_s)
-    op.close
-    if BDRB_CONFIG[:backgroundrb][:log].nil? or BDRB_CONFIG[:backgroundrb][:log] != 'foreground'
-      log_file = File.open(SERVER_LOGGER,"w+")
-      [STDIN, STDOUT, STDERR].each {|desc| desc.reopen(log_file)}
-    end
+daemon = BackgrounDRb::StartStop.new
 
-    BackgrounDRb::MasterProxy.new()
-  end
-when 'stop'
-  def kill_process arg_pid_file
-    pid = nil
-    File.open(arg_pid_file, "r") { |pid_handle| pid = pid_handle.gets.strip.chomp.to_i }
-    begin
-      pgid =  Process.getpgid(pid)
-      Process.kill('TERM', pid)
-      Process.kill('-TERM', pgid)
-      Process.kill('KILL', pid)
-    rescue Errno::ESRCH => e
-      puts "Deleting pid file"
-    rescue
-      puts $!
-    ensure
-      File.delete(arg_pid_file) if File.exists?(arg_pid_file)
-    end
-  end
-  pid_files = Dir["#{RAILS_HOME}/tmp/pids/backgroundrb_*.pid"]
-  pid_files.each { |x| kill_process(x) }
-else
-  BackgrounDRb::MasterProxy.new()
+case ARGV[0]
+when 'start'; daemon.start
+when 'stop'; daemon.stop()
+else; BackgrounDRb::MasterProxy.new()
 end
 
