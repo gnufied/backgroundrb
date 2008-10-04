@@ -2,4 +2,4 @@
 filters_pre: [ "redcloth" ]
 # Custom
 title: "Rails Integration of BackgrounDRb"
-sidebar_items: [["Introduction", "#introduction"], ["Task Invocation", "#task_invocation"], ["Worker Results", "#worker_results"], ["Worker Info", "#worker_info"], ["Advanced", "#advanced"]]
+sidebar_items: [["Introduction", "#introduction"], ["Async Task", "#async_task"], ["Sync Task", "#sync_task"], ["Worker Results", "#worker_results"], ["Persistent Tasks", "#persistent_task"], ["New Worker", "#new_worker"], ["Worker Info", "#worker_info"], ["Clustering", "#clustering"]]

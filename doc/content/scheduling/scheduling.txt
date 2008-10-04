@@ -1,6 +1,6 @@
 <div id="content">
 
-%(entry-title)<a name="simple_schedule"> Timer Based Scheduling </a>%
+%(entry-title)<a name="timer_scheduling"> Timer Based Scheduling </a>%
 
 Simple tasks in the workers can be scheduled using @add_timer@ or @add_periodic_timer@ methods.
 For example:
@@ -20,7 +20,7 @@ end </pre>
 
 Similarly one can use @add_timer@ to fire oneshot task execution.
 
-%(entry-title)<a name="unix_scheduler"> Unix Scheduler </a>%
+%(entry-title)<a name="unix_scheduling"> Unix Scheduler </a>%
 
 _BackgrounDRb_ supports normal unix styled schedules which can be configured
 from @backgroundrb.yml@ file. A sample configuration looks like:
@@ -128,7 +128,7 @@ from the 28th second plus the 59th second:
 Note that if you specify an asterisk in the first field (seconds)
 it will trigger every second for the subsequent match.
 
-p(sub-title). Restarting Workers on Scheduled Time
+%(entry-title)<a name="restart_on_schedule"> Restart worker on schedule </a>%
 
 Usually when your worker is scheduled to execute at longer intervals, it
 doesn't make sense to have worker around, when its doing nothing. Since, scheduling
@@ -150,5 +150,17 @@ end </pre>
 
 In above worker @reload_on_schedule true@ makes sure that your worker is restarted on
 scheduled time. This feature is only available in version 1.0.3 onwards.
+
+%(entry-title)<a name="schedule_at"> Schedule one shot execution of task at specified time </a>%
+
+<p><b> Only available for tasks persisted to database table </b></p>
+
+If you are using job queue table and want one shot execution of a task scheduled at a particular time. You can use:
+
+<pre class="multiline">MiddleMan(:hello_worker).enq_some_task(:arg => "hello_world",
+   :job_key => "boy",:scheduled_at => Time.now + 30.minutes)</pre>
+
+Which will schedule specified task to be executed after 30 minutes from now.
+
 
 </div>

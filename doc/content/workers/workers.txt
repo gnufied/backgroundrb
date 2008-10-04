@@ -66,7 +66,7 @@ end</pre>
 When @reload_on_schedule@ is true, worker won't be loaded while _BackgrounDRb_ starts and hence you don't need
 @set_no_auto_load@ option there.
 
-p(sub-title). Using Thread Pool
+%(entry-title)<a name="thread_pool"> Using Thread Pool </a>%
 
 Remember _BackgrounDRb_ follows event model of network programming, but sad truth of life is not all networking
 libraries follow this model and hence they make use of blocking IO and threads. BackgrounDRb allows you to run
@@ -81,7 +81,7 @@ So whatever code you write within @scrap_wikipedia@ method is going to run concu
 *WARNING*: Many of the Ruby libraries out there aren't thread safe and they may not
 work as advertised when used from threads(example: Mechanize,Scrubyt)
 
-p(sub-title). Storing result/status objects
+%(entry-title)<a name="result_caching"> Result Caching </a>%
 
 <b>Update : </b> <em>Using MemCache to store result objects is strongly recommended. Inbuilt cache works, but may give
 unpredictable results. Also, using Memcache serves as an out of process cache, which can be queried at any time.
@@ -122,7 +122,7 @@ You need to change @backgroundrb.yml@ file like this, for using memcache for obj
 
 Everything else remains the same.
 
-%(entry-title)<a href="persistent_queue">Persistent Task Queue </a>%
+%(entry-title)<a name="persistent_job">Persistent Task Queue </a>%
 
 BackgrounDRb now have out of box support for persistent job queues which are persisted to the
 database. API to add a task in the job_queue is pretty simple:
@@ -155,7 +155,7 @@ class HelloWorker
 end</pre>
 
 
-%(entry-title)<a href="testing">Testing Workers </a>%
+%(entry-title)<a name="worker_testing">Testing Workers </a>%
 
 _BackgrounDRb_ comes with a baked in mechanism to write test cases. First make sure that you
 have bdrb_test_helper.rb in the test directory of your rails app (run @rake backgroundrb:setup@, if you dont have one).

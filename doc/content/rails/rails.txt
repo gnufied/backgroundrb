@@ -6,9 +6,7 @@ BackgrounDRb offers seamless integration with rails. You can invoke random tasks
 workers from rails. You can pass arguments, collect results, monitor status of workers and other
 stuff.
 
-%(entry-title)<a name="newer_api"> BackgrounDRb Client API </a>%
-
-p(sub-title). Invoke an asynchronous task on a worker :
+%(entry-title)<a name="async_task"> Invoke a task asynchronously on a worker </a>%
 
 Let's say, you have following worker code:
 
@@ -45,7 +43,7 @@ one as follows:
 Above snippet also demonstrates that, if your worker was started with a @worker_key@ you can use it to
 get correct worker proxy.
 
-p(sub-title). Invoke a method on worker and get results :
+%(entry-title)<a name="sync_task"> Synchronous Task invocation (Invoke task and wait for results) </a>%
 
 Following snippet will invoke method @some_task@ with argument @data@ in @foo_worker@. Also, method will block
 until BackgrounDRb server returns a result.
@@ -70,7 +68,7 @@ end
 
 As illustrated above, you can use @worker_key@ or make them in single line too.
 
-p(sub-title). Fetch Status/Result Objects of a worker :
+%(entry-title)<a name="worker_results"> Retrieve Cached Worker results </a>%
 
 If you are using @cache@ in your worker code to store result objects, you can retrieve them from
 rails using:
@@ -79,7 +77,7 @@ rails using:
 
 You can as usual use @worker_key@ if *worker was started with a worker_key*.
 
-p(sub-title). Enqueue task to the persistent job queue :
+%(entry-title)<a name="persistent_task"> Enqueue task to the persistent job queue : </a>%
 
 Jobs executed via synchronous and asynchronous APIs are fine, but these tasks are usually
 kept in memory(and hence they are fast) and hence aren't entirely failsafe.
@@ -98,7 +96,7 @@ Above line will add specified task to the job queue and set to be invoked at spe
 about scheduling see scheduling section.
 
 
-p(sub-title). Start a Worker :
+%(entry-title)<a name="new_worker"> Start a new worker from controller </a>%
 
 To start a worker from rails:
 
@@ -112,7 +110,7 @@ Important thing to be kept in mind is, when you are creating a worker using abov
 must use a unique @worker_key@ while starting the worker. Also, while invoking any of the other methods
 like @ask_result@, @worker_info@ or one of the worker methods, you must user same @worker_key@.
 
-p(sub-title). Worker Statistics:
+%(entry-title)<a name="worker_info"> Worker Info </a>%
 
 You can get worker specific information using:
 
@@ -132,7 +130,7 @@ Return value will look like:
 [{:worker_key=>"", :status=>:running, :worker=>:log_worker},
 {:worker_key=>"", :status=>:running, :worker=>:foo_worker}]}</pre>
 
-%(entry-title)<a name="newer_api"> BackgrounDRb Clustering </a>%
+%(entry-title)<a name="clustering"> BackgrounDRb Clustering </a>%
 
 By using following option in your @backgroundrb.yml@ you can cluster more than
 one backgroundrb server.
