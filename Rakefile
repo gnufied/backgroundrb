@@ -41,8 +41,10 @@ Rake::RDocTask.new(:rdoc) do |rdoc|
   rdoc.rdoc_files.include('server/lib/*.rb')
   #rdoc.template = 'jamis'
   rdoc.options += [
+                   '-w', '4',
                    '-SHN',
-                   '-f', 'darkfish',  # This is the important bit
+                   '-f', 'darkfish', # This bit
+                   '-m', 'README',
                   ]
 
 end
