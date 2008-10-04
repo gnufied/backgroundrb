@@ -75,7 +75,15 @@ rails using:
 
 <pre class="boxed">status_obj = MiddleMan.worker(:foo_worker).ask_result(cache_key) </pre>
 
-You can as usual use @worker_key@ if *worker was started with a worker_key*.
+You must use @worker_key@ if *worker was started with a worker_key*.
+
+From controller, you can also reset result stored for a particular worker, with particular cache key.
+This is only applicable, if you are using memcache for storing results.
+
+<pre class="multiline">
+MiddleMan.worker(:foo_worker).reset_memcache_result(cache_key) # or
+MiddleMan.worker(:foo_worker,"worker_key").reset_memcache_result(cache_key)
+</pre>
 
 %(entry-title)<a name="persistent_task"> Enqueue task to the persistent job queue : </a>%
 
