@@ -25,7 +25,7 @@ module BackgrounDRb
         op.write(Process.pid().to_s)
         op.close
         if BDRB_CONFIG[:backgroundrb][:log].nil? or BDRB_CONFIG[:backgroundrb][:log] != 'foreground'
-          log_file = File.open(SERVER_LOGGER,"w+")
+          log_file = File.open(SERVER_LOGGER,"a")
           [STDIN, STDOUT, STDERR].each {|desc| desc.reopen(log_file)}
         end
 

@@ -11,7 +11,7 @@ class BdrbJobQueue < ActiveRecord::Base
       end
       if t_job
         t_job.taken = 1
-        t_job.started_at = Time.now
+        t_job.started_at = Time.now.utc
         t_job.save
         returned_job = t_job
       end
@@ -29,7 +29,7 @@ class BdrbJobQueue < ActiveRecord::Base
 
   def self.insert_job(options = { })
     transaction do
-      options.merge!(:submitted_at => Time.now,:finished => 0,:taken => 0)
+      options.merge!(:submitted_at => Time.now.utc,:finished => 0,:taken => 0)
       t_job = new(options)
       t_job.save
     end
@@ -45,8 +45,8 @@ class BdrbJobQueue < ActiveRecord::Base
   def finish!
     self.class.transaction do
       self.finished = 1
-      self.finished_at = Time.now
-      self.job_key = "finished_#{Time.now.to_i}_#{job_key}"
+      self.finished_at = Time.now.utc
+      self.job_key = "finished_#{Time.now.utc.to_i}_#{job_key}"
       self.save
     end
     Thread.current[:persistent_job_id] = nil
