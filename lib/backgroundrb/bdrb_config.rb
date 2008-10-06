@@ -15,7 +15,7 @@ module BackgrounDRb
                 "Show this help message.") { $stderr.puts opts; exit }
         opts.separator ""
         opts.on("-v","--version",
-                "Show version.") { $stderr.puts "1.0.4"; exit }
+                "Show version.") { $stderr.puts "1.1"; exit }
       end.parse!(argv)
 
       ENV["RAILS_ENV"] = options[:environment] if options[:environment]
