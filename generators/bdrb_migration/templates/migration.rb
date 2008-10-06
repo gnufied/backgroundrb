@@ -17,6 +17,7 @@ class <%= class_name %> < ActiveRecord::Migration
       t.column :submitter_info, :string
       t.column :runner_info, :string
       t.column :worker_key, :string
+      t.column :scheduled_at, :datetime
     end
   end
 
