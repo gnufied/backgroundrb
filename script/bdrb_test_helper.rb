@@ -30,9 +30,9 @@ end
 
 module BackgrounDRb
   class WorkerDummyLogger
-    def info(data)
-    end
-    def debug(data)
+    %w(info debug fatal error warn).each do |x|
+      define_method(x) do |log_data|
+      end
     end
   end
 
