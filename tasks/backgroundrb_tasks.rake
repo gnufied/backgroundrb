@@ -46,8 +46,7 @@ namespace :backgroundrb do
   end
 
   desc "Drops and recreate backgroundrb queue table"
-  task :redo_queue do
-    queue_migration
+  task :redo_queue => :queue_migration do
   end
 
   desc 'update backgroundrb config files from your rails application'
