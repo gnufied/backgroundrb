@@ -30,21 +30,27 @@ module BackgrounDRb
     # receives requests from rails and based on request type invoke appropriate method
     def receive_data p_data
       @tokenizer.extract(p_data) do |b_data|
-        t_data = load_data b_data
-        if t_data
-          case t_data[:type]
-            # async method invocation
-          when :async_invoke: async_method_invoke(t_data)
-            # get status/result
-          when :get_result: get_result_object(t_data)
-            # sync method invocation
-          when :sync_invoke: method_invoke(t_data)
-          when :start_worker: start_worker_request(t_data)
-          when :delete_worker: delete_drb_worker(t_data)
-          when :worker_info: pass_worker_info(t_data)
-          when :all_worker_info: all_worker_info(t_data)
-          else; debug_logger.info("Invalid request")
+        begin
+          t_data = load_data b_data
+          if z_data
+            case t_data[:type]
+              # async method invocation
+            when :async_invoke: async_method_invoke(t_data)
+              # get status/result
+            when :get_result: get_result_object(t_data)
+              # sync method invocation
+            when :sync_invoke: method_invoke(t_data)
+            when :start_worker: start_worker_request(t_data)
+            when :delete_worker: delete_drb_worker(t_data)
+            when :worker_info: pass_worker_info(t_data)
+            when :all_worker_info: all_worker_info(t_data)
+            else; debug_logger.info("Invalid request")
+            end
           end
+        rescue Exception => e
+          debug_logger.info(e)
+          debug_logger.info(e.backtrace.join("\n"))
+          send_object(nil)
         end
       end
     end
@@ -152,9 +158,7 @@ module BackgrounDRb
       send_object(p_data)
     end
 
-    def unbind
-      debug_logger.info("Client disconected")
-    end
+    def unbind; end
 
     # called whenever a new connection is made.Initializes binary data parser
     def post_init

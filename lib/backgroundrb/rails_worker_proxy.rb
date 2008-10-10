@@ -118,7 +118,8 @@ module BackgrounDRb
 
     # reset result within memcache for given key
     def reset_memcache_result(job_key,value)
-      options = compact(:worker => worker_name,:worker_key => worker_key,:job_key => job_key)
+      options = compact(:worker => worker_name,:worker_key => worker_key,\
+                          :job_key => job_key)
       key = gen_key(options)
       middle_man.cache[key] = value
       value
