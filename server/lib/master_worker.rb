@@ -32,7 +32,7 @@ module BackgrounDRb
       @tokenizer.extract(p_data) do |b_data|
         begin
           t_data = load_data b_data
-          if z_data
+          if t_data
             case t_data[:type]
               # async method invocation
             when :async_invoke: async_method_invoke(t_data)
