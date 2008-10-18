@@ -13,6 +13,7 @@ class <%= class_name %> < ActiveRecord::Migration
       t.column :started_at, :datetime
       t.column :finished_at, :datetime
       t.column :archived_at, :datetime
+      t.column :scheduled_at, :datetime
       t.column :tag, :string
       t.column :submitter_info, :string
       t.column :runner_info, :string
