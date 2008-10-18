@@ -265,29 +265,37 @@ module BackgrounDRb
 
     # Check for enqueued tasks and invoke appropriate methods
     def check_for_enqueued_tasks
-      if worker_key && !worker_key.empty?
-        task = BdrbJobQueue.find_next(worker_name.to_s,worker_key.to_s)
-      else
-        task = BdrbJobQueue.find_next(worker_name.to_s)
-      end
-      return unless task
-      if self.respond_to? task.worker_method
-        Thread.current[:persistent_job_id] = task[:id]
-        Thread.current[:job_key] = task[:job_key]
-        called_method_arity = self.method(task.worker_method).arity
-        args = load_data(task.args)
-        begin
-          if called_method_arity != 0
-            self.send(task.worker_method,args)
-          else
-            self.send(task.worker_method)
+      while (task = get_next_task)
+        if self.respond_to? task.worker_method
+          Thread.current[:persistent_job_id] = task[:id]
+          Thread.current[:job_key] = task[:job_key]
+          called_method_arity = self.method(task.worker_method).arity
+          args = load_data(task.args)
+          begin
+            if called_method_arity != 0
+              self.send(task.worker_method,args)
+            else
+              self.send(task.worker_method)
+            end
+          rescue
+            logger.info($!.to_s)
+            logger.info($!.backtrace.join("\n"))
           end
-        rescue
-          logger.info($!.to_s)
-          logger.info($!.backtrace.join("\n"))
+        else
+          task.release_job
         end
+        # Unless configured to loop on persistent tasks, run only
+        # once, and then break
+        break unless BDRB_CONFIG[:backgroundrb][:persistent_multi]
+      end
+    end
+
+    # Get the next enqueued job
+    def get_next_task
+      if worker_key && !worker_key.empty?
+        BdrbJobQueue.find_next(worker_name.to_s,worker_key.to_s)
       else
-        task.release_job
+        BdrbJobQueue.find_next(worker_name.to_s)
       end
     end
 
