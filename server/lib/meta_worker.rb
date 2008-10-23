@@ -128,11 +128,21 @@ module BackgrounDRb
         create_arity = method(:create).arity
         (create_arity == 0) ? create : create(worker_options[:data])
       end
-      return if BDRB_CONFIG[:backgroundrb][:persistent_disabled]
-      delay = BDRB_CONFIG[:backgroundrb][:persistent_delay] || 5
-      add_periodic_timer(delay.to_i) { check_for_enqueued_tasks }
+      if run_persistent_jobs?
+        add_periodic_timer(delay.to_i) { check_for_enqueued_tasks }
+      end
     end
 
+    # Returns the persistent job queue check delay for this worker
+    def persistent_delay
+      get_config_value(:persistent_delay, 5)
+    end
+    
+    # Returns true if persistent jobs should be run for this worker.
+    def run_persistent_jobs?
+      !get_conig_value(:persistent_disabled, false)
+    end
+    
     # return job key from thread global variable
     def job_key; Thread.current[:job_key]; end
 
@@ -324,6 +334,25 @@ module BackgrounDRb
     end
 
     private
+
+    # Returns the local configuration hash for this worker.  Returns an
+    # empty hash if no local config exists.
+    def worker_config
+      if BDRB_CONFIG[:workers] && BDRB_CONFIG[:workers][worker_name.to_sym]
+        BDRB_CONFIG[:workers][worker_name.to_sym]
+      else
+        {}
+      end
+    end
+    
+    # Returns the appropriate configuration value, based on both the
+    # global config and the per-worker configuration for this worker.
+    def get_config_value(key_sym, default)
+      worker_config[key_sym] ||
+        BDRB_CONFIG[:backgroundrb][key_sym] ||
+        default
+    end
+    
     def load_rails_env
       db_config_file = YAML.load(ERB.new(IO.read("#{RAILS_HOME}/config/database.yml")).result)
       run_env = ENV["RAILS_ENV"]
