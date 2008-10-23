@@ -55,7 +55,11 @@ Above Command does following things :
 *(content_list) Creates a config file @backgroundrb.yml@ in config directory of your rails application.
 * Creates @RAILS_ROOT/lib/workers@ directory for keeping BackgrounDRb workers in one place.
 * Creates @RAILS_ROOT/test/bdrb_test_helper.rb@ as a test helper for your workers
-* Creates table required for use as persistent job queue.
+* Creates migration required for creating persistent job queue table.
+
+After above make sure, that generated migration is ran using:
+
+<pre class="boxed">rake db:migrate </pre>
 
 p(sub-title). Configuration Options
 

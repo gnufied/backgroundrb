@@ -7,6 +7,7 @@ doc/output/manual
 doc/output/rails
 doc/output/scheduling
 doc/output/workers
+doc/output/faq
 doc/output/index.html
 coverage
 .dotest
