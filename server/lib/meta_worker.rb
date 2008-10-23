@@ -140,7 +140,7 @@ module BackgrounDRb
     
     # Returns true if persistent jobs should be run for this worker.
     def run_persistent_jobs?
-      !get_conig_value(:persistent_disabled, false)
+      !get_config_value(:persistent_disabled, false)
     end
     
     # return job key from thread global variable
