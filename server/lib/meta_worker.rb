@@ -356,9 +356,13 @@ module BackgrounDRb
     # Returns the appropriate configuration value, based on both the
     # global config and the per-worker configuration for this worker.
     def get_config_value(key_sym, default)
-      worker_config[key_sym] ||
-        BDRB_CONFIG[:backgroundrb][key_sym] ||
+      if !worker_config[key_sym].nil?
+        worker_config[key_sym]
+      elsif !BDRB_CONFIG[:backgroundrb][key_sym].nil?
+        BDRB_CONFIG[:backgroundrb][key_sym]
+      else
         default
+      end
     end
     
     def load_rails_env
