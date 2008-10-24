@@ -129,7 +129,7 @@ module BackgrounDRb
         (create_arity == 0) ? create : create(worker_options[:data])
       end
       if run_persistent_jobs?
-        add_periodic_timer(delay.to_i) { check_for_enqueued_tasks }
+        add_periodic_timer(persistent_delay.to_i) { check_for_enqueued_tasks }
       end
     end
 
