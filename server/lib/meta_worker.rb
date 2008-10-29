@@ -112,7 +112,25 @@ module BackgrounDRb
 
       # stores the job key of currently running job
       Thread.current[:job_key] = nil
-      @logger = PacketLogger.new(self,log_flag)
+      if BDRB_CONFIG[:backgroundrb][:logging_logger].nil?
+        @logger = PacketLogger.new(self,log_flag)
+      else
+        log_config = BDRB_CONFIG[:backgroundrb][:logging_logger]
+        @logger = Logging::Logger[log_config[:name]]
+        @logger.trace = log_config[:trace]
+        @logger.additive = log_config[:additive]
+        log_config[:appenders].keys.each do |key|
+          appender_config = log_config[:appenders][key]
+          appender = "Logging::Appenders::#{appender_config[:type]}".constantize.new("backgroundrb_#{key}",
+            :filename => "#{RAILS_HOME}/#{appender_config[:filename]}",
+            :age => appender_config[:age],
+            :size => appender_config[:size],
+            :keep => appender_config[:keep],
+            :safe => appender_config[:safe],
+            :layout => Logging::Layouts::Pattern.new(:pattern => appender_config[:layout_pattern]))
+          @logger.add_appenders(appender)
+        end
+      end
       @thread_pool = ThreadPool.new(self,pool_size || 20,@logger)
       t_worker_key = worker_options && worker_options[:worker_key]
 
