@@ -57,15 +57,10 @@ module BackgrounDRb
         Thread.current[:job_key] = nil
         Thread.current[:persistent_job_id] = nil
         while true
-          begin
-            task = @work_queue.pop
-            Thread.current[:job_key] = task.job_key
-            Thread.current[:persistent_job_id] = task.persistent_job_id
-            block_result = run_task(task)
-          rescue InterruptedException
-            # Allow threads to be interrupted, then continue
-            next
-          end
+          task = @work_queue.pop
+          Thread.current[:job_key] = task.job_key
+          Thread.current[:persistent_job_id] = task.persistent_job_id
+          block_result = run_task(task)
         end
       end
     end
@@ -83,6 +78,9 @@ module BackgrounDRb
           result = master.send(task.job_method)
         end
         return result
+      rescue BackgrounDRb::InterruptedException
+        # Don't log, just return nil.
+        return nil
       rescue
         logger.info($!.to_s)
         logger.info($!.backtrace.join("\n"))
