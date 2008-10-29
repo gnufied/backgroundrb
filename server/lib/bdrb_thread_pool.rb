@@ -1,4 +1,7 @@
 module BackgrounDRb
+
+  class InterruptedException < RuntimeError ; end
+
   class WorkData
     attr_accessor :args,:block,:job_method,:persistent_job_id,:job_key
     def initialize(args,job_key,job_method,persistent_job_id)
@@ -54,10 +57,15 @@ module BackgrounDRb
         Thread.current[:job_key] = nil
         Thread.current[:persistent_job_id] = nil
         while true
-          task = @work_queue.pop
-          Thread.current[:job_key] = task.job_key
-          Thread.current[:persistent_job_id] = task.persistent_job_id
-          block_result = run_task(task)
+          begin
+            task = @work_queue.pop
+            Thread.current[:job_key] = task.job_key
+            Thread.current[:persistent_job_id] = task.persistent_job_id
+            block_result = run_task(task)
+          rescue InterruptedException
+            # Allow threads to be interrupted, then continue
+            next
+          end
         end
       end
     end
