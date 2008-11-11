@@ -22,8 +22,8 @@ module BackgrounDRb
       @size = size
       @threads = []
       @work_queue = Queue.new
-      @size.times { add_thread }
       @mutex = Monitor.new
+      @size.times { add_thread }
     end
 
     # can be used to make a call in threaded manner
