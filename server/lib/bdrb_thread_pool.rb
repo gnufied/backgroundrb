@@ -47,9 +47,9 @@ module BackgrounDRb
     # assuming method is defined in rss_worker
 
     def defer(method_name,args = nil)
-      job_key = Thread.current[:job_key]
-      persistent_job_id = Thread.current[:persistent_job_id]
       @mutex.synchronize do
+        job_key = Thread.current[:job_key]
+        persistent_job_id = Thread.current[:persistent_job_id]
         @work_queue << WorkData.new(args,job_key,method_name,persistent_job_id)
       end
     end
@@ -60,15 +60,18 @@ module BackgrounDRb
         Thread.current[:job_key] = nil
         Thread.current[:persistent_job_id] = nil
         while true
-          @mutex.synchronize do
-            begin
+          begin
+            task = nil
+            @mutex.synchronize do
               task = @work_queue.pop
+            end
+            if task
               Thread.current[:job_key] = task.job_key
               Thread.current[:persistent_job_id] = task.persistent_job_id
               block_result = run_task(task)
-            rescue BackgrounDRb::InterruptedException
-              logger.info("BackgrounDRb thread interrupted: #{Thread.current.inspect}")
             end
+          rescue BackgrounDRb::InterruptedException
+            logger.info("BackgrounDRb thread interrupted: #{Thread.current.inspect}")
           end
         end
       end
