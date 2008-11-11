@@ -63,7 +63,7 @@ module BackgrounDRb
             Thread.current[:persistent_job_id] = task.persistent_job_id
             block_result = run_task(task)
           rescue BackgrounDRb::InterruptedException
-            next
+            logger.info("BackgronDRb thread interrupted: #{Thread.current.inspect}")
           end
         end
       end
@@ -82,9 +82,9 @@ module BackgrounDRb
           result = master.send(task.job_method)
         end
         return result
-      rescue BackgrounDRb::InterruptedException
-        # Don't log, just return nil.
-        return nil
+      rescue BackgrounDRb::InterruptedException => e
+        # Don't log, just re-raise
+        raise e
       rescue
         logger.info($!.to_s)
         logger.info($!.backtrace.join("\n"))
