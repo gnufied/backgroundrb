@@ -23,6 +23,7 @@ module BackgrounDRb
       @threads = []
       @work_queue = Queue.new
       @size.times { add_thread }
+      @mutex = Monitor.new
     end
 
     # can be used to make a call in threaded manner
@@ -48,7 +49,9 @@ module BackgrounDRb
     def defer(method_name,args = nil)
       job_key = Thread.current[:job_key]
       persistent_job_id = Thread.current[:persistent_job_id]
-      @work_queue << WorkData.new(args,job_key,method_name,persistent_job_id)
+      @mutex.synchronize do
+        @work_queue << WorkData.new(args,job_key,method_name,persistent_job_id)
+      end
     end
 
     # Start worker threads
@@ -57,13 +60,15 @@ module BackgrounDRb
         Thread.current[:job_key] = nil
         Thread.current[:persistent_job_id] = nil
         while true
-          begin
-            task = @work_queue.pop
-            Thread.current[:job_key] = task.job_key
-            Thread.current[:persistent_job_id] = task.persistent_job_id
-            block_result = run_task(task)
-          rescue BackgrounDRb::InterruptedException
-            logger.info("BackgronDRb thread interrupted: #{Thread.current.inspect}")
+          @mutex.synchronize do
+            begin
+              task = @work_queue.pop
+              Thread.current[:job_key] = task.job_key
+              Thread.current[:persistent_job_id] = task.persistent_job_id
+              block_result = run_task(task)
+            rescue BackgrounDRb::InterruptedException
+              logger.info("BackgrounDRb thread interrupted: #{Thread.current.inspect}")
+            end
           end
         end
       end
