@@ -21,8 +21,9 @@ module BackgrounDRb
       @logger = logger
       @size = size
       @threads = []
-      @work_queue = Queue.new
+      @work_queue = []
       @mutex = Monitor.new
+      @cv = @mutex.new_cond
       @size.times { add_thread }
     end
 
@@ -50,7 +51,9 @@ module BackgrounDRb
       @mutex.synchronize do
         job_key = Thread.current[:job_key]
         persistent_job_id = Thread.current[:persistent_job_id]
-        @work_queue << WorkData.new(args,job_key,method_name,persistent_job_id)
+        @cv.wait_while { @work_queue.size >= size }
+        @work_queue.push(WorkData.new(args,job_key,method_name,persistent_job_id))
+        @cv.broadcast
       end
     end
 
@@ -63,7 +66,9 @@ module BackgrounDRb
           begin
             task = nil
             @mutex.synchronize do
+              @cv.wait_while { @work_queue.size == 0 }
               task = @work_queue.pop
+              @cv.broadcast
             end
             if task
               Thread.current[:job_key] = task.job_key
