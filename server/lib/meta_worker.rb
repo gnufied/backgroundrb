@@ -112,7 +112,25 @@ module BackgrounDRb
 
       # stores the job key of currently running job
       Thread.current[:job_key] = nil
-      @logger = PacketLogger.new(self,log_flag)
+      if BDRB_CONFIG[:backgroundrb][:logging_logger].nil?
+        @logger = PacketLogger.new(self,log_flag)
+      else
+        log_config = BDRB_CONFIG[:backgroundrb][:logging_logger]
+        @logger = Logging::Logger[log_config[:name]]
+        @logger.trace = log_config[:trace]
+        @logger.additive = log_config[:additive]
+        log_config[:appenders].keys.each do |key|
+          appender_config = log_config[:appenders][key]
+          appender = "Logging::Appenders::#{appender_config[:type]}".constantize.new("backgroundrb_#{key}",
+            :filename => "#{RAILS_HOME}/#{appender_config[:filename]}",
+            :age => appender_config[:age],
+            :size => appender_config[:size],
+            :keep => appender_config[:keep],
+            :safe => appender_config[:safe],
+            :layout => Logging::Layouts::Pattern.new(:pattern => appender_config[:layout_pattern]))
+          @logger.add_appenders(appender)
+        end
+      end
       @thread_pool = ThreadPool.new(self,pool_size || 20,@logger)
       t_worker_key = worker_options && worker_options[:worker_key]
 
@@ -128,11 +146,21 @@ module BackgrounDRb
         create_arity = method(:create).arity
         (create_arity == 0) ? create : create(worker_options[:data])
       end
-      return if BDRB_CONFIG[:backgroundrb][:persistent_disabled]
-      delay = BDRB_CONFIG[:backgroundrb][:persistent_delay] || 5
-      add_periodic_timer(delay.to_i) { check_for_enqueued_tasks }
+      if run_persistent_jobs?
+        add_periodic_timer(persistent_delay.to_i) { check_for_enqueued_tasks }
+      end
     end
 
+    # Returns the persistent job queue check delay for this worker
+    def persistent_delay
+      get_config_value(:persistent_delay, 5)
+    end
+    
+    # Returns true if persistent jobs should be run for this worker.
+    def run_persistent_jobs?
+      !get_config_value(:persistent_disabled, false)
+    end
+    
     # return job key from thread global variable
     def job_key; Thread.current[:job_key]; end
 
@@ -265,29 +293,37 @@ module BackgrounDRb
 
     # Check for enqueued tasks and invoke appropriate methods
     def check_for_enqueued_tasks
-      if worker_key && !worker_key.empty?
-        task = BdrbJobQueue.find_next(worker_name.to_s,worker_key.to_s)
-      else
-        task = BdrbJobQueue.find_next(worker_name.to_s)
-      end
-      return unless task
-      if self.respond_to? task.worker_method
-        Thread.current[:persistent_job_id] = task[:id]
-        Thread.current[:job_key] = task[:job_key]
-        called_method_arity = self.method(task.worker_method).arity
-        args = load_data(task.args)
-        begin
-          if called_method_arity != 0
-            self.send(task.worker_method,args)
-          else
-            self.send(task.worker_method)
+      while (task = get_next_task)
+        if self.respond_to? task.worker_method
+          Thread.current[:persistent_job_id] = task[:id]
+          Thread.current[:job_key] = task[:job_key]
+          called_method_arity = self.method(task.worker_method).arity
+          args = load_data(task.args)
+          begin
+            if called_method_arity != 0
+              self.send(task.worker_method,args)
+            else
+              self.send(task.worker_method)
+            end
+          rescue
+            logger.info($!.to_s)
+            logger.info($!.backtrace.join("\n"))
           end
-        rescue
-          logger.info($!.to_s)
-          logger.info($!.backtrace.join("\n"))
+        else
+          task.release_job
         end
+        # Unless configured to loop on persistent tasks, run only
+        # once, and then break
+        break unless BDRB_CONFIG[:backgroundrb][:persistent_multi]
+      end
+    end
+
+    # Get the next enqueued job
+    def get_next_task
+      if worker_key && !worker_key.empty?
+        BdrbJobQueue.find_next(worker_name.to_s,worker_key.to_s)
       else
-        task.release_job
+        BdrbJobQueue.find_next(worker_name.to_s)
       end
     end
 
@@ -324,6 +360,29 @@ module BackgrounDRb
     end
 
     private
+
+    # Returns the local configuration hash for this worker.  Returns an
+    # empty hash if no local config exists.
+    def worker_config
+      if BDRB_CONFIG[:workers] && BDRB_CONFIG[:workers][worker_name.to_sym]
+        BDRB_CONFIG[:workers][worker_name.to_sym]
+      else
+        {}
+      end
+    end
+    
+    # Returns the appropriate configuration value, based on both the
+    # global config and the per-worker configuration for this worker.
+    def get_config_value(key_sym, default)
+      if !worker_config[key_sym].nil?
+        worker_config[key_sym]
+      elsif !BDRB_CONFIG[:backgroundrb][key_sym].nil?
+        BDRB_CONFIG[:backgroundrb][key_sym]
+      else
+        default
+      end
+    end
+    
     def load_rails_env
       db_config_file = YAML.load(ERB.new(IO.read("#{RAILS_HOME}/config/database.yml")).result)
       run_env = ENV["RAILS_ENV"]

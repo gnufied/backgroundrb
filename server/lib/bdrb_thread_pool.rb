@@ -1,4 +1,7 @@
 module BackgrounDRb
+
+  class InterruptedException < RuntimeError ; end
+
   class WorkData
     attr_accessor :args,:block,:job_method,:persistent_job_id,:job_key
     def initialize(args,job_key,job_method,persistent_job_id)
@@ -18,7 +21,9 @@ module BackgrounDRb
       @logger = logger
       @size = size
       @threads = []
-      @work_queue = Queue.new
+      @work_queue = []
+      @mutex = Monitor.new
+      @cv = @mutex.new_cond
       @size.times { add_thread }
     end
 
@@ -43,9 +48,13 @@ module BackgrounDRb
     # assuming method is defined in rss_worker
 
     def defer(method_name,args = nil)
-      job_key = Thread.current[:job_key]
-      persistent_job_id = Thread.current[:persistent_job_id]
-      @work_queue << WorkData.new(args,job_key,method_name,persistent_job_id)
+      @mutex.synchronize do
+        job_key = Thread.current[:job_key]
+        persistent_job_id = Thread.current[:persistent_job_id]
+        @cv.wait_while { @work_queue.size >= size }
+        @work_queue.push(WorkData.new(args,job_key,method_name,persistent_job_id))
+        @cv.broadcast
+      end
     end
 
     # Start worker threads
@@ -54,10 +63,21 @@ module BackgrounDRb
         Thread.current[:job_key] = nil
         Thread.current[:persistent_job_id] = nil
         while true
-          task = @work_queue.pop
-          Thread.current[:job_key] = task.job_key
-          Thread.current[:persistent_job_id] = task.persistent_job_id
-          block_result = run_task(task)
+          begin
+            task = nil
+            @mutex.synchronize do
+              @cv.wait_while { @work_queue.size == 0 }
+              task = @work_queue.pop
+              @cv.broadcast
+            end
+            if task
+              Thread.current[:job_key] = task.job_key
+              Thread.current[:persistent_job_id] = task.persistent_job_id
+              block_result = run_task(task)
+            end
+          rescue BackgrounDRb::InterruptedException
+            logger.info("BackgrounDRb thread interrupted: #{Thread.current.inspect}")
+          end
         end
       end
     end
@@ -75,6 +95,9 @@ module BackgrounDRb
           result = master.send(task.job_method)
         end
         return result
+      rescue BackgrounDRb::InterruptedException => e
+        # Don't log, just re-raise
+        raise e
       rescue
         logger.info($!.to_s)
         logger.info($!.backtrace.join("\n"))
