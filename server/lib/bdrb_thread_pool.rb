@@ -46,7 +46,6 @@ module BackgrounDRb
     # you can invoke above method from rails as:
     #   MiddleMan.worker(:rss_worker).async_user_tags(:arg => "en.wikipedia.org")
     # assuming method is defined in rss_worker
-
     def defer(method_name,args = nil)
       @mutex.synchronize do
         job_key = Thread.current[:job_key]
