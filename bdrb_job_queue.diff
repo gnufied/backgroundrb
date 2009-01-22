@@ -1,0 +1,54 @@
+diff --git a/vendor/plugins/backgroundrb/lib/backgroundrb/bdrb_job_queue.rb b/vendor/plugins/backgroundrb/lib/backgroundrb/bdrb_job_queue.rb
+index ce2d51d..56512e2 100644
+--- a/vendor/plugins/backgroundrb/lib/backgroundrb/bdrb_job_queue.rb
++++ b/vendor/plugins/backgroundrb/lib/backgroundrb/bdrb_job_queue.rb
+@@ -2,16 +2,25 @@
+ 
+ class BdrbJobQueue < ActiveRecord::Base
+   validates_uniqueness_of :job_key,:scope => [:worker_name,:worker_key]
++  @@verbose_logging = false
++  cattr_writer :verbose_logging
++  
+   # find next task from the table
++  def self.do_find_next(worker_name,worker_key)
++    unless worker_key
++      #use ruby time stamps for time calculations as db might have different times than what is calculated by ruby/rails
++      t_job = find(:first,:conditions => [" worker_name = ? AND taken = ? AND scheduled_at <= ? ", worker_name, 0, Time.now.utc ],:lock => true)
++    else
++      t_job = find(:first,:conditions => [" worker_name = ? AND taken = ? AND worker_key = ? AND scheduled_at <= ? ", worker_name, 0, worker_key, Time.now.utc ],:lock => true)
++    end
++    t_job
++  end
++  
+   def self.find_next(worker_name,worker_key = nil)
+     returned_job = nil
+     transaction do
+-      unless worker_key
+-        #use ruby time stamps for time calculations as db might have different times than what is calculated by ruby/rails
+-        t_job = find(:first,:conditions => [" worker_name = ? AND taken = ? AND scheduled_at <= ? ", worker_name, 0, Time.now.utc ],:lock => true)
+-      else
+-        t_job = find(:first,:conditions => [" worker_name = ? AND taken = ? AND worker_key = ? AND scheduled_at <= ? ", worker_name, 0, worker_key, Time.now.utc ],:lock => true)
+-      end
++      t_job = @@verbose_logging ? do_find_next(worker_name,worker_key) : @logger.silence { do_find_next(worker_name,worker_key) }
++
+       if t_job
+         t_job.taken = 1
+         t_job.started_at = Time.now.utc
+@@ -42,12 +51,16 @@ class BdrbJobQueue < ActiveRecord::Base
+   end
+ 
+   # remove a job from table
+-  def self.remove_job(options = { })
++  def do_remove_job(options)
+     transaction do
+       t_job_id = find(:first, :conditions => options.merge(:finished => 0,:taken => 0),:lock => true)
+       delete(t_job_id)
+     end
+   end
++  
++  def self.remove_job(options = { })
++    @@verbose_logging ? do_remove_job : @logger.silence { do_remove_job(options) }
++  end
+ 
+   # Mark a job as finished
+   def finish!
