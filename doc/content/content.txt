@@ -31,7 +31,12 @@ will always mirror stable releases from Git. However to enjoy latest and greates
 you can install the plugin from git:
 
 <pre class="multiline">
-git clone git://github.com/gnufied/backgroundrb.git </pre>
+git clone git://github.com/gnufied/backgroundrb.git vendor/plugins/backgroundrb</pre>
+
+Or if you want to use submodules:
+
+<pre class="multiline">
+git submodule add git://github.com/gnufied/backgroundrb.git vendor/plugins/backgroundrb</pre>
 
 <p style="text-decoration: line-through;"> Also for running git version of BackgrounDRb you will need, git version of packet.</p>
 
