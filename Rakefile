@@ -4,7 +4,7 @@ require 'rake/testtask'
 require 'rake/rdoctask'
 require 'spec/rake/spectask'
 require 'rake/contrib/sshpublisher'
-require "darkfish-rdoc"
+
 
 desc 'Default: run unit tests.'
 task :default => :test
@@ -32,6 +32,7 @@ desc 'Generate documentation for the backgroundrb plugin.'
 Rake::RDocTask.new(:rdoc) do |rdoc|
   rdoc.rdoc_dir = 'doc/output/manual'
   rdoc.title    = 'Backgroundrb'
+
   #rdoc.options << '--line-numbers' << '--inline-source'
   rdoc.rdoc_files.include('README')
   rdoc.rdoc_files.include('LICENSE')
