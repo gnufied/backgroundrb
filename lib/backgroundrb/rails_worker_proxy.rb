@@ -30,7 +30,7 @@ module BackgrounDRb
       elsif worker_method =~ /^enq_(\w+)/i
         raise NoJobKey.new("Must specify a job key with enqueued tasks") if job_key.blank?
         method_name = $1
-        marshalled_args = Marshal.dump(arg)
+        marshalled_args = Base64.encode64(Marshal.dump(arg))
         enqueue_task(compact(:worker_name => worker_name.to_s,:worker_key => worker_key.to_s,
                              :worker_method => method_name.to_s,:job_key => job_key.to_s, :priority => priority,
                              :args => marshalled_args,:timeout => arguments ? arguments[:timeout] : nil,:scheduled_at => new_schedule))

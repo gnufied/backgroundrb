@@ -1,7 +1,7 @@
 class <%= class_name %> < ActiveRecord::Migration
   def self.up
     create_table :<%= bdrb_table_name %> do |t|
-      t.column :args, :binary
+      t.column :args, :text
       t.column :worker_name, :string
       t.column :worker_method, :string
       t.column :job_key, :string
