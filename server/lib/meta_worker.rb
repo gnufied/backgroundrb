@@ -338,7 +338,7 @@ module BackgrounDRb
           Thread.current[:persistent_job_id] = task[:id]
           Thread.current[:job_key] = task[:job_key]
           args = load_data(task.args)
-          invoke_user_method(task.worker_method,task.args)
+          invoke_user_method(task.worker_method,args)
         else
           task.release_job
         end
