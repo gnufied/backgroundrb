@@ -47,9 +47,9 @@ module BackgrounDRb
             else; debug_logger.info("Invalid request")
             end
           end
-        rescue Exception => e
-          debug_logger.info(e)
-          debug_logger.info(e.backtrace.join("\n"))
+        rescue Object => bdrb_error
+          debug_logger.info(bdrb_error)
+          debug_logger.info(bdrb_error.backtrace.join("\n"))
           send_object(nil)
         end
       end
