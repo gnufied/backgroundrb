@@ -80,8 +80,16 @@ module BackgrounDRb
           retry
         end
       end
-      return nil if method_name == :ask_work
-      return_result(result)
+      #return nil if method_name == :ask_work
+      process_result(return_result(result))
+    end
+
+    def process_result t_result
+      case t_result
+      when Hash
+      when Array
+        t_result
+      end
     end
 
     # choose a backgroundrb server connection and invoke worker method on it.

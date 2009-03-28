@@ -84,7 +84,10 @@ module BackgrounDRb
     def ask_work p_data
       p_data[:type] = :async_invoke
       dump_object(p_data)
+      bdrb_response = nil
+      @mutex.synchronize { bdrb_response = read_from_bdrb() }
       close_connection
+      bdrb_response
     end
 
     def new_worker p_data
@@ -170,7 +173,7 @@ module BackgrounDRb
       bdrb_response = nil
       @mutex.synchronize { bdrb_response = read_from_bdrb(nil) }
       close_connection
-      bdrb_response ? bdrb_response[:data] : nil
+      bdrb_response
     end
   end
 end

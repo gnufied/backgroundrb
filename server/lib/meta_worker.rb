@@ -234,7 +234,7 @@ module BackgrounDRb
       if (user_input[:worker_method]).nil? or !respond_to?(user_input[:worker_method])
         result = nil
         puts "Trying to invoke invalid worker method on worker #{worker_name}"
-        send_response(p_data,result)
+        send_response(p_data,result,"error")
         return
       end
 
@@ -242,11 +242,15 @@ module BackgrounDRb
 
       Thread.current[:job_key] = user_input[:job_key]
 
-      result = invoke_user_method(user_input[:worker_method],user_input[:arg])
+      result,result_flag = invoke_user_method(user_input[:worker_method],user_input[:arg])
 
       if p_data[:result]
         result = "dummy_result" if result.nil?
-        send_response(p_data,result) if can_dump?(result)
+        if can_dump?(result)
+          send_response(p_data,result,result_flag)
+        else
+          send_response(p_data,"dummy_result","error")
+        end
       end
     end
 
@@ -280,14 +284,16 @@ module BackgrounDRb
 
     # send the response back to master process and hence to the client
     # if there is an error while dumping the object, send "invalid_result_dump_check_log"
-    def send_response input,output
+    def send_response input,output,result_flag = "ok"
       input[:data] = output
       input[:type] = :response
+      input[:result_flag] = result_flag
       begin
         send_data(input)
       rescue Object => bdrb_error
         log_exception(bdrb_error)
         input[:data] = "invalid_result_dump_check_log"
+        input[:result_flag] = "error"
         send_data(input)
       end
     end
@@ -308,14 +314,15 @@ module BackgrounDRb
           else
             t_result = self.send(user_method)
           end
+          [t_result,"ok"]
         rescue Object => bdrb_error
           puts "Error calling method #{user_method} with #{args} on worker #{worker_name}"
           log_exception(bdrb_error)
+          [t_result,"error"]
         end
-        t_result
       else
         puts "Trying to invoke method #{user_method} with #{args} on worker #{worker_name} failed because no such method is defined on the worker"
-        nil
+        [nil,"error"]
       end
     end
 

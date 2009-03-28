@@ -18,4 +18,12 @@ module BackgrounDRb
   # raised, when said task was submitted without a job key, whereas
   # nature of the task requires a job key
   class NoJobKey < RuntimeError; end
+
+  # raised if worker throws some error
+  class RemoteWorkerError < RuntimeError
+    attr_accessor :message
+    def initialize message
+      @message = message
+    end
+  end
 end

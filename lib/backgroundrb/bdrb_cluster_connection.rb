@@ -129,9 +129,11 @@ module BackgrounDRb
     def new_worker(options = {})
       update_stats
       succeeded = false
+      result = nil
+
       @backend_connections.each do |connection|
         begin
-          connection.new_worker(options)
+          result = connection.new_worker(options)
           succeeded = true
         rescue BdrbConnError; end
       end
