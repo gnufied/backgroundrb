@@ -129,6 +129,15 @@ module BackgrounDRb
       if run_persistent_jobs?
         add_periodic_timer(persistent_delay.to_i) { check_for_enqueued_tasks }
       end
+      write_pid_file(t_worker_key)
+    end
+
+    def write_pid_file t_worker_key
+      key = [worker_name,t_worker_key].compact.join('_')
+      pid_file = "#{RAILS_HOME}/tmp/pids/backgroundrb_#{BDRB_CONFIG[:backgroundrb][:port]}_worker_#{key}.pid"
+      op = File.open(pid_file, "w")
+      op.write(Process.pid().to_s)
+      op.close
     end
 
     def initialize_logger

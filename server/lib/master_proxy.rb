@@ -112,10 +112,12 @@ module BackgrounDRb
           t_worker.send_request(data_request)
           t_worker.send_request(exit_request)
         end
-      rescue LoadError
+      rescue LoadError => e
         puts "no such worker #{worker_name}"
-      rescue MissingSourceFile
+        puts e.backtrace.join("\n")
+      rescue MissingSourceFile => e
         puts "no such worker #{worker_name}"
+        puts e.backtrace.join("\n")
         return
       end
     end
