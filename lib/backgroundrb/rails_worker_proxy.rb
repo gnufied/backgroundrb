@@ -87,6 +87,17 @@ module BackgrounDRb
     def process_result t_result
       case t_result
       when Hash
+        if(t_result[:result] == true && t_result[:type] = :response)
+          if(t_result[:result_flag] == "ok")
+            return t_result[:data]
+          else
+            raise RemoteWorkerError.new("Error while executing worker method")
+          end
+        elsif(t_result[:result_flag] == "ok")
+          "ok"
+        elsif(t_result[:result_flag] == "error")
+          raise RemoteWorkerError.new("Error while executing worker method")
+        end
       when Array
         t_result
       end
