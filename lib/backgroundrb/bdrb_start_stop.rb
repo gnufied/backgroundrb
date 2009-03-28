@@ -43,10 +43,10 @@ module BackgrounDRb
         op.write(Process.pid().to_s)
         op.close
         if BDRB_CONFIG[:backgroundrb][:log].nil? or BDRB_CONFIG[:backgroundrb][:log] != 'foreground'
-          log_file = File.open(SERVER_LOGGER,"w+")
-          [STDIN, STDOUT, STDERR].each {|desc| desc.reopen(log_file)}
+          log_file = File.open(SERVER_LOGGER,(File::WRONLY | File::APPEND | File::CREAT))
+          log_file.sync = true
+          [STDOUT, STDERR].each {|desc| desc.reopen(log_file)}
         end
-
         BackgrounDRb::MasterProxy.new()
       end
     end
