@@ -76,7 +76,8 @@ module BackgrounDRb
               block_result = run_task(task)
             end
           rescue BackgrounDRb::InterruptedException
-            logger.info("BackgrounDRb thread interrupted: #{Thread.current.inspect}")
+            STDERR.puts("BackgrounDRb thread interrupted: #{Thread.current.inspect}")
+            STDERR.flush
           end
         end
       end
@@ -86,7 +87,7 @@ module BackgrounDRb
     def run_task task
       block_arity = master.method(task.job_method).arity
       begin
-        ActiveRecord::Base.verify_active_connections!
+        check_db_connection
         t_data = task.args
         result = nil
         if block_arity != 0
@@ -98,12 +99,29 @@ module BackgrounDRb
       rescue BackgrounDRb::InterruptedException => e
         # Don't log, just re-raise
         raise e
-      rescue
-        logger.info($!.to_s)
-        logger.info($!.backtrace.join("\n"))
+      rescue Object => bdrb_error
+        log_exception(bdrb_error)
         return nil
       end
     end
+
+    def log_exception exception_object
+      STDERR.puts exception_object.to_s
+      STDERR.puts exception_object.backtrace.join("\n")
+      STDERR.flush
+    end
+
+
+    # Periodic check for lost database connections and closed connections
+    def check_db_connection
+      begin
+        ActiveRecord::Base.verify_active_connections! if defined?(ActiveRecord)
+      rescue Object => bdrb_error
+        log_exception(bdrb_error)
+      end
+    end
+
+
   end #end of class ThreadPool
 end # end of module BackgrounDRb
 

@@ -16,6 +16,10 @@ module BackgrounDRb
       arguments = args.first
 
       arg,job_key,host_info,scheduled_at = arguments && arguments.values_at(:arg,:job_key,:host,:scheduled_at)
+
+      # allow both arg and args
+      arg ||= arguments[:args]
+
       new_schedule = (scheduled_at && scheduled_at.respond_to?(:utc)) ? scheduled_at.utc : Time.now.utc
 
       if worker_method =~ /^async_(\w+)/
