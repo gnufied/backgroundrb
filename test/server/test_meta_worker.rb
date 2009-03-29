@@ -3,11 +3,12 @@ require "meta_worker"
 require "chronic"
 
 context "A Meta Worker should" do
-  def dump_object data
-    t = Marshal.dump(data)
-    t.length.to_s.rjust(9,'0') + t
+  module Kernel
+    def packet_dump data
+      t = Marshal.dump(data)
+      t.length.to_s.rjust(9,'0') + t
+    end
   end
-
   setup do
     options = {:schedules =>
       {
@@ -64,7 +65,7 @@ context "A Meta Worker should" do
   specify "should invoke async tasks without sending results" do
     a = {:data=>{:worker_method=>"who", :arg=>"rails",:job_key => "lol"}, :type=>:request, :result=>false, :client_signature=>9}
     @meta_worker.expects(:who).with("rails").returns(nil)
-    @meta_worker.receive_internal_data(dump_object(a))
+    @meta_worker.receive_internal_data(packet_dump(a))
     Thread.current[:job_key].should == "lol"
   end
 
@@ -75,8 +76,8 @@ context "A Meta Worker should" do
       end
     end
     b = {:data=>{:worker_method=>"baz", :arg=>"rails"}, :type=>:request, :result=>true, :client_signature=>9}
-    @meta_worker.expects(:send_data).with({:data=>"hello : rails", :type=>:response, :result=>true, :client_signature=>9}).returns("hello : rails")
-    @meta_worker.receive_internal_data(dump_object(b))
+    @meta_worker.expects(:send_data).with({:data=>"hello : rails", :type=>:response, :result=>true, :client_signature=>9, :result_flag => "ok"}).returns("hello : rails")
+    @meta_worker.receive_internal_data(packet_dump(b))
     Thread.current[:job_key].should == nil
   end
 
@@ -90,7 +91,7 @@ context "A Meta Worker should" do
     b = {:data=> {:worker_method=>"baz", :arg => { :name => "bdrb",:age => 10} }, :type=>:request, :result=>true, :client_signature=>9 }
     # @meta_worker.expects(:send_data).with({:data=>"hello : rails", :type=>:response, :result=>true, :client_signature=>9}).returns("hello : rails")
     @meta_worker.expects(:baz).with({ :name => "bdrb",:age => 10}).returns("foo")
-    @meta_worker.receive_internal_data(dump_object(b))
+    @meta_worker.receive_internal_data(packet_dump(b))
     @meta_worker.outgoing_data[:data].should == "foo"
     Thread.current[:job_key].should == nil
   end
@@ -104,7 +105,7 @@ context "A Meta Worker should" do
     end
     @meta_worker.cache[:start_message] = "helloworld"
     c = {:data=>{:job_key=>:start_message}, :type=>:get_result, :result=>true, :client_signature=>9}
-    @meta_worker.receive_internal_data(dump_object(c))
+    @meta_worker.receive_internal_data(packet_dump(c))
     @meta_worker.t_result[:data].should == "helloworld"
   end
 
@@ -114,15 +115,14 @@ context "A Meta Worker should" do
         proc { "boy"}
       end
       def send_data input
-        dump_object(input)
+        packet_dump(input)
       end
     end
     b = {:data=>{:worker_method=>"baz", :arg=>"rails"}, :type=>:request, :result=>true, :client_signature=>9}
-    a = @meta_worker.receive_internal_data(dump_object(b))
-    a.should == nil
+    a = @meta_worker.receive_internal_data(packet_dump(b))
+    p a
     Thread.current[:job_key].should == nil
   end
-
 end
 
 context "For unix schedulers" do
@@ -260,7 +260,7 @@ context "For enqueued tasks" do
   specify "should run enqueued tasks with arguments if they are there in the queue" do
     @meta_worker = QueueWorker.start_worker
     mocked_task = mock()
-    mocked_task.expects(:worker_method).returns(:barbar).times(3)
+    mocked_task.expects(:worker_method).returns(:barbar).times(2)
     mocked_task.expects(:args).returns(Marshal.dump("hello"))
     mocked_task.expects(:[]).returns(1).times(2)
     @meta_worker.expects(:barbar).with("hello").returns(true)
@@ -272,7 +272,7 @@ context "For enqueued tasks" do
     @meta_worker = QueueWorker.start_worker
     mocked_task = mock()
     mocked_task.expects(:[]).returns(1).times(2)
-    mocked_task.expects(:worker_method).returns(:barbar).times(3)
+    mocked_task.expects(:worker_method).returns(:barbar).times(2)
     mocked_task.expects(:args).returns(nil)
     @meta_worker.expects(:barbar)
     BdrbJobQueue.expects(:find_next).with("queue_worker").returns(mocked_task)

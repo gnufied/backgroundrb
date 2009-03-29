@@ -24,6 +24,7 @@ context "Master proxy for reloadable workers" do
     @master_proxy.worker_triggers.should.not.be {}
     assert @master_proxy.worker_triggers.keys.include?(:bar_worker)
     assert @master_proxy.worker_triggers[:bar_worker].keys.include?(:do_job)
+
     @master_proxy.worker_triggers[:bar_worker][:do_job].should.not.be { }
   end
 

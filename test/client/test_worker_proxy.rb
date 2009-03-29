@@ -21,7 +21,7 @@ context "Worker Proxy in general" do
   specify "should let you invoke sync task  methods" do
     actual_conn = mock()
     actual_conn.expects(:server_info).returns("localhost:11008")
-    actual_conn.expects(:send_request).returns(20)
+    actual_conn.expects(:send_request).returns({ :data => 20, :result_flag => "ok",:result => true, :type => :response})
     @cluster_conn.expects(:choose_server).returns(actual_conn)
     a = @worker_proxy.hello_world(:args => "sucks")
     a.should == 20
