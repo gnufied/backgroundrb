@@ -98,4 +98,12 @@ context "Worker Proxy in general" do
 
   specify "should switch connections if invoke fails on chosen one" do
   end
+
+  specify "Should allow method with empty params to work" do
+    actual_conn = mock()
+    actual_conn.expects(:server_info).returns("localhost:11211")
+    actual_conn.expects(:ask_work).with(:worker => :hello_worker,:worker_method => 'foobar').returns(nil)
+    @cluster_conn.expects(:choose_server).returns(actual_conn)
+    @worker_proxy.async_foobar
+  end
 end
