@@ -112,10 +112,12 @@ module BackgrounDRb
           t_worker.send_request(data_request)
           t_worker.send_request(exit_request)
         end
-      rescue LoadError
+      rescue LoadError => e
         puts "no such worker #{worker_name}"
-      rescue MissingSourceFile
+        puts e.backtrace.join("\n")
+      rescue MissingSourceFile => e
         puts "no such worker #{worker_name}"
+        puts e.backtrace.join("\n")
         return
       end
     end
@@ -124,7 +126,12 @@ module BackgrounDRb
       db_config_file = YAML.load(ERB.new(IO.read("#{RAILS_HOME}/config/database.yml")).result)
       run_env = ENV["RAILS_ENV"]
       ActiveRecord::Base.establish_connection(db_config_file[run_env])
-      ActiveRecord::Base.allow_concurrency = true
+
+      if(Object.const_defined?(:Rails) && Rails.version < "2.2.2")
+        ActiveRecord::Base.allow_concurrency = true
+      elsif(Object.const_defined?(:RAILS_GEM_VERSION) && RAILS_GEM_VERSION < "2.2.2")
+        ActiveRecord::Base.allow_concurrency = true
+      end
     end
 
     def check_for_ruby_version; RUBY_VERSION >= "1.8.5"; end

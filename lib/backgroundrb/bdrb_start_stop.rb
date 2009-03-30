@@ -43,13 +43,33 @@ module BackgrounDRb
         op.write(Process.pid().to_s)
         op.close
         if BDRB_CONFIG[:backgroundrb][:log].nil? or BDRB_CONFIG[:backgroundrb][:log] != 'foreground'
-          log_file = File.open(SERVER_LOGGER,"w+")
-          [STDIN, STDOUT, STDERR].each {|desc| desc.reopen(log_file)}
+          redirect_io(SERVER_LOGGER)
         end
-
         BackgrounDRb::MasterProxy.new()
       end
     end
+
+    # Free file descriptors and
+    # point them somewhere sensible
+    # STDOUT/STDERR should go to a logfile
+    def redirect_io(logfile_name)
+      begin; STDIN.reopen "/dev/null"; rescue ::Exception; end
+
+      if logfile_name
+        begin
+          STDOUT.reopen logfile_name, "a"
+          STDOUT.sync = true
+        rescue ::Exception
+          begin; STDOUT.reopen "/dev/null"; rescue ::Exception; end
+        end
+      else
+        begin; STDOUT.reopen "/dev/null"; rescue ::Exception; end
+      end
+
+      begin; STDERR.reopen STDOUT; rescue ::Exception; end
+      STDERR.sync = true
+    end
+
 
     def stop
       pid_files = Dir["#{RAILS_HOME}/tmp/pids/backgroundrb_*.pid"]

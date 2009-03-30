@@ -1,4 +1,7 @@
 module BackgrounDRb
+
+  class InterruptedException < RuntimeError ; end
+
   class WorkData
     attr_accessor :args,:block,:job_method,:persistent_job_id,:job_key
     def initialize(args,job_key,job_method,persistent_job_id)
@@ -18,7 +21,9 @@ module BackgrounDRb
       @logger = logger
       @size = size
       @threads = []
-      @work_queue = Queue.new
+      @work_queue = []
+      @mutex = Monitor.new
+      @cv = @mutex.new_cond
       @size.times { add_thread }
     end
 
@@ -43,9 +48,13 @@ module BackgrounDRb
     # assuming method is defined in rss_worker
 
     def defer(method_name,args = nil)
-      job_key = Thread.current[:job_key]
-      persistent_job_id = Thread.current[:persistent_job_id]
-      @work_queue << WorkData.new(args,job_key,method_name,persistent_job_id)
+      @mutex.synchronize do
+        job_key = Thread.current[:job_key]
+        persistent_job_id = Thread.current[:persistent_job_id]
+        @cv.wait_while { @work_queue.size >= size }
+        @work_queue.push(WorkData.new(args,job_key,method_name,persistent_job_id))
+        @cv.broadcast
+      end
     end
 
     # Start worker threads
@@ -54,10 +63,22 @@ module BackgrounDRb
         Thread.current[:job_key] = nil
         Thread.current[:persistent_job_id] = nil
         while true
-          task = @work_queue.pop
-          Thread.current[:job_key] = task.job_key
-          Thread.current[:persistent_job_id] = task.persistent_job_id
-          block_result = run_task(task)
+          begin
+            task = nil
+            @mutex.synchronize do
+              @cv.wait_while { @work_queue.size == 0 }
+              task = @work_queue.pop
+              @cv.broadcast
+            end
+            if task
+              Thread.current[:job_key] = task.job_key
+              Thread.current[:persistent_job_id] = task.persistent_job_id
+              block_result = run_task(task)
+            end
+          rescue BackgrounDRb::InterruptedException
+            STDERR.puts("BackgrounDRb thread interrupted: #{Thread.current.inspect}")
+            STDERR.flush
+          end
         end
       end
     end
@@ -66,7 +87,7 @@ module BackgrounDRb
     def run_task task
       block_arity = master.method(task.job_method).arity
       begin
-        ActiveRecord::Base.verify_active_connections!
+        check_db_connection
         t_data = task.args
         result = nil
         if block_arity != 0
@@ -75,12 +96,32 @@ module BackgrounDRb
           result = master.send(task.job_method)
         end
         return result
-      rescue
-        logger.info($!.to_s)
-        logger.info($!.backtrace.join("\n"))
+      rescue BackgrounDRb::InterruptedException => e
+        # Don't log, just re-raise
+        raise e
+      rescue Object => bdrb_error
+        log_exception(bdrb_error)
         return nil
       end
     end
+
+    def log_exception exception_object
+      STDERR.puts exception_object.to_s
+      STDERR.puts exception_object.backtrace.join("\n")
+      STDERR.flush
+    end
+
+
+    # Periodic check for lost database connections and closed connections
+    def check_db_connection
+      begin
+        ActiveRecord::Base.verify_active_connections! if defined?(ActiveRecord)
+      rescue Object => bdrb_error
+        log_exception(bdrb_error)
+      end
+    end
+
+
   end #end of class ThreadPool
 end # end of module BackgrounDRb
 

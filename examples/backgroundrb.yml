@@ -10,7 +10,7 @@
   :persistent_disabled: false # turn this off if your application doesn't use backgroundrb's persistent/enqueued tasks system
   :persistent_delay: 10 # the time (seconds) between each time backgroundrb checks the database for enqueued tasks
 
-:memcache: "10.0.0.1:11211,10.0.0.2:11211" #=> location of mecache clusters seperated by comma
+:memcache: "10.0.0.1:11211,10.0.0.2:11211" #=> location of memcache clusters separated by comma
 
 # following section is totally optional, and only useful if you are trying to cluster of backgroundrb server
 # if you do not specify this section backgroundrb will assume that, from rails you are connecting to the

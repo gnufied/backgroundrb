@@ -108,11 +108,10 @@ module BackgrounDRb
       raise "Invalid worker name" if !worker_name
       Thread.abort_on_exception = true
 
-      log_flag = BDRB_CONFIG[:backgroundrb][:debug_log].nil? ? true : BDRB_CONFIG[:backgroundrb][:debug_load_rails_env]
-
       # stores the job key of currently running job
       Thread.current[:job_key] = nil
-      @logger = PacketLogger.new(self,log_flag)
+      initialize_logger
+
       @thread_pool = ThreadPool.new(self,pool_size || 20,@logger)
       t_worker_key = worker_options && worker_options[:worker_key]
 
@@ -125,12 +124,62 @@ module BackgrounDRb
         new_load_schedule if @my_schedule
       end
       if respond_to?(:create)
-        create_arity = method(:create).arity
-        (create_arity == 0) ? create : create(worker_options[:data])
+        invoke_user_method(:create,worker_options[:data])
       end
-      return if BDRB_CONFIG[:backgroundrb][:persistent_disabled]
-      delay = BDRB_CONFIG[:backgroundrb][:persistent_delay] || 5
-      add_periodic_timer(delay.to_i) { check_for_enqueued_tasks }
+      if run_persistent_jobs?
+        add_periodic_timer(persistent_delay.to_i) { check_for_enqueued_tasks }
+      end
+      write_pid_file(t_worker_key)
+    end
+
+    def write_pid_file t_worker_key
+      key = [worker_name,t_worker_key].compact.join('_')
+      pid_file = "#{RAILS_HOME}/tmp/pids/backgroundrb_#{BDRB_CONFIG[:backgroundrb][:port]}_worker_#{key}.pid"
+      op = File.open(pid_file, "w")
+      op.write(Process.pid().to_s)
+      op.close
+    end
+
+    def initialize_logger
+      log_flag = BDRB_CONFIG[:backgroundrb][:debug_log].nil? ? true : BDRB_CONFIG[:backgroundrb][:debug_load_rails_env]
+      if BDRB_CONFIG[:backgroundrb][:logging_logger].nil?
+        @logger = PacketLogger.new(self,log_flag)
+      else
+        log_config = BDRB_CONFIG[:backgroundrb][:logging_logger]
+        @logger = Logging::Logger[log_config[:name]]
+        @logger.trace = log_config[:trace]
+        @logger.additive = log_config[:additive]
+
+        log_config[:appenders].keys.each do |key|
+          appender_config = log_config[:appenders][key]
+
+          logger_options = {
+            :filename => "#{RAILS_HOME}/#{appender_config[:filename]}",
+            :age => appender_config[:age],
+            :size => appender_config[:size],
+            :keep => appender_config[:keep],
+            :safe => appender_config[:safe],
+            :layout => Logging::Layouts::Pattern.new(:pattern => appender_config[:layout_pattern])
+          }
+          appender = "Logging::Appenders::#{appender_config[:type]}".constantize.new("backgroundrb_#{key}",logger_options)
+          @logger.add_appenders(appender)
+        end
+      end
+    end
+
+    def puts msg
+      STDOUT.puts msg
+      STDOUT.flush
+    end
+
+    # Returns the persistent job queue check delay for this worker
+    def persistent_delay
+      get_config_value(:persistent_delay, 5)
+    end
+
+    # Returns true if persistent jobs should be run for this worker.
+    def run_persistent_jobs?
+      !get_config_value(:persistent_disabled, false)
     end
 
     # return job key from thread global variable
@@ -184,29 +233,24 @@ module BackgrounDRb
       user_input = p_data[:data]
       if (user_input[:worker_method]).nil? or !respond_to?(user_input[:worker_method])
         result = nil
-        send_response(p_data,result)
+        puts "Trying to invoke invalid worker method on worker #{worker_name}"
+        send_response(p_data,result,"error")
         return
       end
 
-      called_method_arity = self.method(user_input[:worker_method]).arity
       result = nil
 
       Thread.current[:job_key] = user_input[:job_key]
 
-      begin
-        if called_method_arity != 0
-          result = self.send(user_input[:worker_method],user_input[:arg])
-        else
-          result = self.send(user_input[:worker_method])
-        end
-      rescue
-        logger.info($!.to_s)
-        logger.info($!.backtrace.join("\n"))
-      end
+      result,result_flag = invoke_user_method(user_input[:worker_method],user_input[:arg])
 
       if p_data[:result]
         result = "dummy_result" if result.nil?
-        send_response(p_data,result) if can_dump?(result)
+        if can_dump?(result)
+          send_response(p_data,result,result_flag)
+        else
+          send_response(p_data,"dummy_result","error")
+        end
       end
     end
 
@@ -240,21 +284,45 @@ module BackgrounDRb
 
     # send the response back to master process and hence to the client
     # if there is an error while dumping the object, send "invalid_result_dump_check_log"
-    def send_response input,output
+    def send_response input,output,result_flag = "ok"
       input[:data] = output
       input[:type] = :response
+      input[:result_flag] = result_flag
       begin
         send_data(input)
-      rescue TypeError => e
-        logger.info(e.to_s)
-        logger.info(e.backtrace.join("\n"))
+      rescue Object => bdrb_error
+        log_exception(bdrb_error)
         input[:data] = "invalid_result_dump_check_log"
+        input[:result_flag] = "error"
         send_data(input)
-      rescue
-        logger.info($!.to_s)
-        logger.info($!.backtrace.join("\n"))
-        input[:data] = "invalid_result_dump_check_log"
-        send_data(input)
+      end
+    end
+
+    def log_exception exception_object
+      STDERR.puts exception_object.to_s
+      STDERR.puts exception_object.backtrace.join("\n")
+      STDERR.flush
+    end
+
+    def invoke_user_method user_method,args
+      if self.respond_to?(user_method)
+        called_method_arity = self.method(user_method).arity
+        t_result = nil
+        begin
+          if(called_method_arity != 0)
+            t_result = self.send(user_method,args)
+          else
+            t_result = self.send(user_method)
+          end
+          [t_result,"ok"]
+        rescue Object => bdrb_error
+          puts "Error calling method #{user_method} with #{args} on worker #{worker_name}"
+          log_exception(bdrb_error)
+          [t_result,"error"]
+        end
+      else
+        puts "Trying to invoke method #{user_method} with #{args} on worker #{worker_name} failed because no such method is defined on the worker"
+        [nil,"error"]
       end
     end
 
@@ -265,29 +333,27 @@ module BackgrounDRb
 
     # Check for enqueued tasks and invoke appropriate methods
     def check_for_enqueued_tasks
-      if worker_key && !worker_key.empty?
-        task = BdrbJobQueue.find_next(worker_name.to_s,worker_key.to_s)
-      else
-        task = BdrbJobQueue.find_next(worker_name.to_s)
-      end
-      return unless task
-      if self.respond_to? task.worker_method
-        Thread.current[:persistent_job_id] = task[:id]
-        Thread.current[:job_key] = task[:job_key]
-        called_method_arity = self.method(task.worker_method).arity
-        args = load_data(task.args)
-        begin
-          if called_method_arity != 0
-            self.send(task.worker_method,args)
-          else
-            self.send(task.worker_method)
-          end
-        rescue
-          logger.info($!.to_s)
-          logger.info($!.backtrace.join("\n"))
+      while (task = get_next_task)
+        if self.respond_to? task.worker_method
+          Thread.current[:persistent_job_id] = task[:id]
+          Thread.current[:job_key] = task[:job_key]
+          args = load_data(task.args)
+          invoke_user_method(task.worker_method,args)
+        else
+          task.release_job
         end
+        # Unless configured to loop on persistent tasks, run only
+        # once, and then break
+        break unless BDRB_CONFIG[:backgroundrb][:persistent_multi]
+      end
+    end
+
+    # Get the next enqueued job
+    def get_next_task
+      if worker_key && !worker_key.empty?
+        BdrbJobQueue.find_next(worker_name.to_s,worker_key.to_s)
       else
-        task.release_job
+        BdrbJobQueue.find_next(worker_name.to_s)
       end
     end
 
@@ -301,12 +367,7 @@ module BackgrounDRb
         time_now = Time.now.to_i
         if value[:runtime] < time_now
           check_db_connection
-          begin
-            (t_data = value[:data]) ? send(key,t_data) : send(key)
-          rescue
-            logger.info($!.to_s)
-            logger.info($!.backtrace.join("\n"))
-          end
+          invoke_user_method(key,value[:data])
           t_time = value[:trigger].fire_after_time(Time.now)
           value[:runtime] = t_time.to_i
         end
@@ -317,18 +378,44 @@ module BackgrounDRb
     def check_db_connection
       begin
         ActiveRecord::Base.verify_active_connections! if defined?(ActiveRecord)
-      rescue
-        logger.info($!.to_s)
-        logger.info($!.backtrace.join("\n"))
+      rescue Object => bdrb_error
+        log_exception(bdrb_error)
       end
     end
 
     private
+
+    # Returns the local configuration hash for this worker.  Returns an
+    # empty hash if no local config exists.
+    def worker_config
+      if BDRB_CONFIG[:workers] && BDRB_CONFIG[:workers][worker_name.to_sym]
+        BDRB_CONFIG[:workers][worker_name.to_sym]
+      else
+        {}
+      end
+    end
+
+    # Returns the appropriate configuration value, based on both the
+    # global config and the per-worker configuration for this worker.
+    def get_config_value(key_sym, default)
+      if !worker_config[key_sym].nil?
+        worker_config[key_sym]
+      elsif !BDRB_CONFIG[:backgroundrb][key_sym].nil?
+        BDRB_CONFIG[:backgroundrb][key_sym]
+      else
+        default
+      end
+    end
+
     def load_rails_env
       db_config_file = YAML.load(ERB.new(IO.read("#{RAILS_HOME}/config/database.yml")).result)
       run_env = ENV["RAILS_ENV"]
       ActiveRecord::Base.establish_connection(db_config_file[run_env])
-      ActiveRecord::Base.allow_concurrency = true
+      if(Object.const_defined?(:Rails) && Rails.version < "2.2.2")
+        ActiveRecord::Base.allow_concurrency = true
+      elsif(Object.const_defined?(:RAILS_GEM_VERSION) && RAILS_GEM_VERSION < "2.2.2")
+        ActiveRecord::Base.allow_concurrency = true
+      end
     end
 
   end # end of class MetaWorker

@@ -47,9 +47,9 @@ module BackgrounDRb
             else; debug_logger.info("Invalid request")
             end
           end
-        rescue Exception => e
-          debug_logger.info(e)
-          debug_logger.info(e.backtrace.join("\n"))
+        rescue Object => bdrb_error
+          debug_logger.info(bdrb_error)
+          debug_logger.info(bdrb_error.backtrace.join("\n"))
           send_object(nil)
         end
       end
@@ -103,17 +103,30 @@ module BackgrounDRb
     def async_method_invoke(t_data)
       worker_name = t_data[:worker]
       worker_name_key = gen_worker_key(worker_name,t_data[:worker_key])
+
+      unless worker_methods(worker_name_key).include?(t_data[:worker_method])
+        send_object(:result_flag => "error")
+        return
+      end
+
       t_data.delete(:worker)
       t_data.delete(:type)
       begin
         ask_worker(worker_name_key,:data => t_data, :type => :request, :result => false)
+        send_object(:result_flag => "ok")
       rescue Packet::DisconnectError => sock_error
+        send_object(:result_flag => "error")
         reactor.live_workers.delete(worker_name_key)
       rescue
+        send_object(:result_flag => "error")
         debug_logger.info($!.message)
         debug_logger.info($!.backtrace.join("\n"))
         return
       end
+    end
+
+    def worker_methods worker_name_key
+      reactor.live_workers[worker_name_key].invokable_worker_methods
     end
 
     # Given a cache key, ask the worker for result stored in it.
@@ -155,6 +168,7 @@ module BackgrounDRb
 
     # Receieve responses from workers and dispatch them back to the client
     def worker_receive p_data
+      p_data[:result_flag] ||= "ok"
       send_object(p_data)
     end
 

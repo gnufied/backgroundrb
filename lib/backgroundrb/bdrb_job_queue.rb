@@ -5,6 +5,7 @@ class BdrbJobQueue < ActiveRecord::Base
   # find next task from the table
   def self.find_next(worker_name,worker_key = nil)
     returned_job = nil
+    ActiveRecord::Base.verify_active_connections! 
     transaction do
       unless worker_key
         #use ruby time stamps for time calculations as db might have different times than what is calculated by ruby/rails
@@ -25,6 +26,7 @@ class BdrbJobQueue < ActiveRecord::Base
   # release a job and mark it to be unfinished and free.
   # useful, if inside a worker, processing of this job failed and you want it to process later
   def release_job
+    ActiveRecord::Base.verify_active_connections! 
     self.class.transaction do
       self.taken = 0
       self.started_at = nil
@@ -34,6 +36,7 @@ class BdrbJobQueue < ActiveRecord::Base
 
   # insert a new job for processing. jobs added will be automatically picked by the appropriate worker
   def self.insert_job(options = { })
+    ActiveRecord::Base.verify_active_connections! 
     transaction do
       options.merge!(:submitted_at => Time.now.utc,:finished => 0,:taken => 0)
       t_job = new(options)
@@ -43,6 +46,7 @@ class BdrbJobQueue < ActiveRecord::Base
 
   # remove a job from table
   def self.remove_job(options = { })
+    ActiveRecord::Base.verify_active_connections! 
     transaction do
       t_job_id = find(:first, :conditions => options.merge(:finished => 0,:taken => 0),:lock => true)
       delete(t_job_id)
@@ -51,6 +55,7 @@ class BdrbJobQueue < ActiveRecord::Base
 
   # Mark a job as finished
   def finish!
+    ActiveRecord::Base.verify_active_connections! 
     self.class.transaction do
       self.finished = 1
       self.finished_at = Time.now.utc
