@@ -9,14 +9,14 @@ module BackgrounDRb
       elsif dead? # dead, but pid exists
         remove_pidfiles
       end
-      
+
       # status == 3, not running.
       STDOUT.sync = true
       print("Starting BackgrounDRb .... ")
       start_bdrb
       puts "Success!"
     end
-    
+
     def stop
       pid_files = Dir["#{RAILS_HOME}/tmp/pids/backgroundrb_*.pid"]
       puts "BackgrounDRb Not Running" if pid_files.empty?
@@ -27,8 +27,9 @@ module BackgrounDRb
           # stopping an already stopped process is considered a success (exit status 0)
         end
       end
+      remove_pidfiles
     end
-    
+
     # returns the correct lsb code for the status:
     # 0 program is running or service is OK
     # 1 program is dead and /var/run pid file exists
@@ -43,12 +44,12 @@ module BackgrounDRb
           3
         end
       end
-      
+
       return @status
     end
-    
+
     def pidfile_exists?; File.exists?(PID_FILE); end
-    
+
     def process_running?
       begin
         Process.kill(0,self.pid)
@@ -57,19 +58,19 @@ module BackgrounDRb
         false
       end
     end
-    
+
     def running?;status == 0;end
     # pidfile exists but process isn't running
-    
+
     def dead?;status == 1;end
-    
+
     def pid
       File.read(PID_FILE).strip.to_i if pidfile_exists?
     end
-    
+
     def remove_pidfiles
       require 'fileutils'
-      FileUtils.rm_rf("#{RAILS_HOME}/tmp/pids/backgroundrb_*.pid")
+      FileUtils.rm_r(Dir["#{RAILS_HOME}/tmp/pids/backgroundrb_*.pid"])
     end
 
     def start_bdrb
@@ -85,10 +86,11 @@ module BackgrounDRb
       require "active_support"
 
       BackgrounDRb::Config.parse_cmd_options ARGV
-    
+
       require RAILS_HOME + "/config/environment"
       require "bdrb_job_queue"
       require "backgroundrb_server"
+
       main_pid = fork do
         if BDRB_CONFIG[:backgroundrb][:log].nil? or BDRB_CONFIG[:backgroundrb][:log] != 'foreground'
           redirect_io(SERVER_LOGGER)
@@ -96,6 +98,7 @@ module BackgrounDRb
         $0 = "backgroundrb master"
         BackgrounDRb::MasterProxy.new()
       end
+
       File.open(PID_FILE, "w") {|pidfile| pidfile.write(main_pid)}
     end
 
@@ -106,8 +109,8 @@ module BackgrounDRb
       File.delete(pid_file) if File.exists?(pid_file)
       puts "Stopped BackgrounDRb worker with pid #{pid}"
     end
-    
-    
+
+
     # Free file descriptors and
     # point them somewhere sensible
     # STDOUT/STDERR should go to a logfile
@@ -128,6 +131,6 @@ module BackgrounDRb
       begin; STDERR.reopen STDOUT; rescue ::Exception; end
       STDERR.sync = true
     end
-
   end
+
 end
