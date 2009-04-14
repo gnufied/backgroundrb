@@ -18,7 +18,7 @@ module BackgrounDRb
       arg,job_key,host_info,scheduled_at = arguments && arguments.values_at(:arg,:job_key,:host,:scheduled_at)
 
       # allow both arg and args
-      arg ||= arguments[:args]
+      arg ||= arguments && arguments[:args]
 
       new_schedule = (scheduled_at && scheduled_at.respond_to?(:utc)) ? scheduled_at.utc : Time.now.utc
 

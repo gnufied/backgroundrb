@@ -8,32 +8,28 @@ WORKER_LOAD_ENV = File.join(RAILS_HOME,"script","load_worker_env")
 ["server","server/lib","lib","lib/backgroundrb"].each { |x| $LOAD_PATH.unshift(BDRB_HOME + "/#{x}")}
 $LOAD_PATH.unshift(WORKER_ROOT)
 
-require "rubygems"
-require "yaml"
-require "erb"
-require "logger"
-require "packet"
-require "optparse"
-
-require "bdrb_config"
-require RAILS_HOME + "/config/boot"
-require "active_support"
-
-BackgrounDRb::Config.parse_cmd_options ARGV
+require 'rubygems'
+require 'bdrb_config'
 BDRB_CONFIG = BackgrounDRb::Config.read_config("#{RAILS_HOME}/config/backgroundrb.yml")
-
-require RAILS_HOME + "/config/environment"
-require "bdrb_job_queue"
-require "backgroundrb_server"
-
 PID_FILE = "#{RAILS_HOME}/tmp/pids/backgroundrb_#{BDRB_CONFIG[:backgroundrb][:port]}.pid"
 SERVER_LOGGER = "#{RAILS_HOME}/log/backgroundrb_debug_#{BDRB_CONFIG[:backgroundrb][:port]}.log"
 
+require 'bdrb_start_stop'
 daemon = BackgrounDRb::StartStop.new
 
 case ARGV[0]
 when 'start'; daemon.start
-when 'stop'; daemon.stop()
-else; BackgrounDRb::MasterProxy.new()
+when 'stop'; daemon.stop
+when 'restart'; daemon.stop;daemon.start
+when 'status'
+  if daemon.running?
+    puts "BackgrounDRb Running"
+    exit
+  else
+    puts "BackgrounDRb Not Running"
+    exit!(daemon.status)
+  end
+else
+  BackgrounDRb::MasterProxy.new()
 end
 

@@ -1,3 +1,5 @@
+require 'yaml'
+require 'erb'
 module BackgrounDRb
   class Config
     def self.parse_cmd_options(argv)
