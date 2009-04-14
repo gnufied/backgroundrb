@@ -7,7 +7,7 @@ module BackgrounDRb
         puts "BackgrounDRb Already Running"
         exit(0)
       elsif dead? # dead, but pid exists
-        remove_pidfile
+        remove_pidfiles
       end
       
       # status == 3, not running.
@@ -67,8 +67,9 @@ module BackgrounDRb
       File.read(PID_FILE).strip.to_i if pidfile_exists?
     end
     
-    def remove_pidfile
-      File.delete(PID_FILE)
+    def remove_pidfiles
+      require 'fileutils'
+      FileUtils.rm_rf("#{RAILS_HOME}/tmp/pids/backgroundrb_*.pid")
     end
 
     def start_bdrb
