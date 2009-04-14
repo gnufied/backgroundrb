@@ -1,54 +1,112 @@
+# see http://refspecs.freestandards.org/LSB_3.1.0/LSB-Core-generic/LSB-Core-generic/iniscrptact.html
+# for LSB-compliancy info
 module BackgrounDRb
   class StartStop
-    def kill_process arg_pid_file
-      pid = nil
-      pid = File.open(arg_pid_file, "r") { |pid_handle| pid_handle.gets.strip.chomp.to_i }
-      pgid =  Process.getpgid(pid)
-      puts "Stopping BackgrounDRb with pid #{pid}...."
-      Process.kill('-TERM', pgid)
-      File.delete(arg_pid_file) if File.exists?(arg_pid_file)
+    def start
+      if running? # starting an already running process is considered a success
+        puts "BackgrounDRb Already Running"
+        exit(0)
+      elsif dead? # dead, but pid exists
+        remove_pidfile
+      end
+      
+      # status == 3, not running.
+      STDOUT.sync = true
+      print("Starting BackgrounDRb .... ")
+      start_bdrb
       puts "Success!"
     end
-
-
-    def running?; File.exists?(PID_FILE); end
-
-    def really_running? pid
+    
+    def stop
+      pid_files = Dir["#{RAILS_HOME}/tmp/pids/backgroundrb_*.pid"]
+      puts "BackgrounDRb Not Running" if pid_files.empty?
+      pid_files.each do |x|
+        begin
+          kill_process(x)
+        rescue Errno::ESRCH
+          # stopping an already stopped process is considered a success (exit status 0)
+        end
+      end
+    end
+    
+    # returns the correct lsb code for the status:
+    # 0 program is running or service is OK
+    # 1 program is dead and /var/run pid file exists
+    # 3 program is not running
+    def status
+      @status ||= begin
+        if pidfile_exists? and process_running?
+          0
+        elsif pidfile_exists? # but not process_running
+          1
+        else
+          3
+        end
+      end
+      
+      return @status
+    end
+    
+    def pidfile_exists?; File.exists?(PID_FILE); end
+    
+    def process_running?
       begin
-        Process.kill(0,pid)
+        Process.kill(0,self.pid)
         true
       rescue Errno::ESRCH
-        puts "pid file exists but process doesn't seem to be running restarting now"
         false
       end
     end
-
-    def try_restart
-      pid = nil
-      pid = File.open(PID_FILE, "r") { |pid_handle| pid_handle.gets.strip.chomp.to_i }
-      if really_running? pid
-        puts "pid file already exists, exiting..."
-        exit(-1)
-      end
+    
+    def running?;status == 0;end
+    # pidfile exists but process isn't running
+    
+    def dead?;status == 1;end
+    
+    def pid
+      File.read(PID_FILE).strip.to_i if pidfile_exists?
+    end
+    
+    def remove_pidfile
+      File.delete(PID_FILE)
     end
 
-    def start
-      if fork
-        sleep(5)
-        exit(0)
-      else
-        try_restart if running?
-        puts "Starting BackgrounDRb .... "
-        op = File.open(PID_FILE, "w")
-        op.write(Process.pid().to_s)
-        op.close
+    def start_bdrb
+      require "rubygems"
+      require "yaml"
+      require "erb"
+      require "logger"
+      require "packet"
+      require "optparse"
+
+      require "bdrb_config"
+      require RAILS_HOME + "/config/boot"
+      require "active_support"
+
+      BackgrounDRb::Config.parse_cmd_options ARGV
+    
+      require RAILS_HOME + "/config/environment"
+      require "bdrb_job_queue"
+      require "backgroundrb_server"
+      main_pid = fork do
         if BDRB_CONFIG[:backgroundrb][:log].nil? or BDRB_CONFIG[:backgroundrb][:log] != 'foreground'
           redirect_io(SERVER_LOGGER)
         end
+        $0 = "backgroundrb master"
         BackgrounDRb::MasterProxy.new()
       end
+      File.open(PID_FILE, "w") {|pidfile| pidfile.write(main_pid)}
     end
 
+    def kill_process(pid_file)
+      pid = File.open(pid_file, "r") { |pid_handle| pid_handle.gets.strip.to_i }
+      pgid =  Process.getpgid(pid)
+      Process.kill('-TERM', pgid)
+      File.delete(pid_file) if File.exists?(pid_file)
+      puts "Stopped BackgrounDRb worker with pid #{pid}"
+    end
+    
+    
     # Free file descriptors and
     # point them somewhere sensible
     # STDOUT/STDERR should go to a logfile
@@ -70,10 +128,5 @@ module BackgrounDRb
       STDERR.sync = true
     end
 
-
-    def stop
-      pid_files = Dir["#{RAILS_HOME}/tmp/pids/backgroundrb_*.pid"]
-      pid_files.each { |x| kill_process(x) }
-    end
   end
 end
