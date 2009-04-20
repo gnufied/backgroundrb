@@ -25,7 +25,7 @@ class BdrbJobQueue < ActiveRecord::Base
 
   #these accessors get around any possible character encoding issues with the database
   def args=(args)
-    write_attribute(:args, Base64.b64encode(args))
+    write_attribute(:args, Base64.encode64(args))
   end
 
   def args
