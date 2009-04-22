@@ -75,6 +75,27 @@ context "Worker Proxy in general" do
     @worker_proxy.enq_foobar(:arg => :hello,:job_key => "catz")
   end
 
+
+  specify "should run enqueued tasks in order if they have priorites" do
+
+    BdrbJobQueue = mock() unless Object.const_defined?(:BdrbJobQueue)
+
+    [2,4,10].each do |priority|
+      BdrbJobQueue.expects(:insert_job).with() { |value|
+        value[:worker_name].should == "hello_worker"
+        value[:worker_method].should == "foobar"
+        value[:scheduled_at].should.not == nil
+        value[:job_key] == priority.to_s
+        value[:priority] == priority
+      }.once
+    end
+    
+    @worker_proxy.enq_foobar(:job_key => '4', :priority => 4, :arg => :hello)
+    @worker_proxy.enq_foobar(:job_key => '2', :priority => 2, :arg => :hello)
+    @worker_proxy.enq_foobar(:job_key => '10', :priority => 10, :arg => :hello)
+  end
+
+
   specify "for removing tasks from the queue" do
     BdrbJobQueue = mock() unless Object.const_defined?(:BdrbJobQueue)
     BdrbJobQueue.expects(:remove_job).with() do |value|

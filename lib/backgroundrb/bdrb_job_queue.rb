@@ -9,7 +9,7 @@ class BdrbJobQueue < ActiveRecord::Base
     transaction do
       unless worker_key
         #use ruby time stamps for time calculations as db might have different times than what is calculated by ruby/rails
-        t_job = find(:first,:conditions => [" worker_name = ? AND taken = ? AND scheduled_at <= ? ", worker_name, 0, Time.now.utc ],:lock => true)
+        t_job = find(:first,:conditions => [" worker_name = ? AND taken = ? AND scheduled_at <= ? ", worker_name, 0, Time.now.utc ],:lock => true, :order => 'priority desc')
       else
         t_job = find(:first,:conditions => [" worker_name = ? AND taken = ? AND worker_key = ? AND scheduled_at <= ? ", worker_name, 0, worker_key, Time.now.utc ],:lock => true)
       end
