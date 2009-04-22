@@ -1,11 +1,13 @@
 require File.join(File.dirname(__FILE__) + "/..","bdrb_test_helper")
 
 context "Cront Trigger in general" do
+  
   specify "should let tasks running at given time interval run" do
+        
     # every 5 seconds
     a = BackgrounDRb::CronTrigger.new("*/5 * * * * * *")
-    t_time = Time.parse("Wed Feb 13 20:53:43 +0530 2008")
-    firetime = a.fire_after_time(t_time)
+    t_time = Time.utc_time(2008,2,13,20,53,45)
+    firetime = a.fire_after_time(t_time)    
     firetime.min.should == 53
     firetime.sec.should == 45
     firetime.hour.should == 20
@@ -36,7 +38,7 @@ context "Cront Trigger in general" do
     firetime.month.should == 2
 
     a = BackgrounDRb::CronTrigger.new("*/10 * * * * * ")
-    t_time = Time.parse("Wed Feb 13 23:17:55 +0530 2008")
+    t_time = Time.utc_time(2008,2,13,23,17,55)
     firetime = a.fire_after_time(t_time)
     firetime.hour.should == 23
     firetime.min.should == 18
@@ -47,7 +49,7 @@ context "Cront Trigger in general" do
 
   specify "should return correct firetime for hour intervals" do
     # every 5 hour
-    t_time = Time.parse("Wed Feb 13 20:53:43 +0530 2008")
+    t_time = Time.utc_time(2008,2,13,20,53,43)
     a = BackgrounDRb::CronTrigger.new("0 0 */5 * * * *")
     firetime = a.fire_after_time(t_time)
     firetime.hour.should == 0
@@ -58,7 +60,7 @@ context "Cront Trigger in general" do
   end
 
   specify "should return firetime based on wday restriction" do
-    t_time = Time.parse("Wed Feb 13 20:53:43 +0530 2008")
+    t_time = Time.utc_time(2008,2,13,20,53,43)
     # on sunday and monday it should run every 5 th hour
     a = BackgrounDRb::CronTrigger.new("0 0 */5 * * 0-1 *")
     firetime = a.fire_after_time(t_time)
@@ -68,7 +70,7 @@ context "Cront Trigger in general" do
     firetime.day.should == 17
     firetime.month.should == 2
 
-    t_time2 = Time.parse("Sun Feb 17 20:53:43 +0530 2008")
+    t_time2 = Time.utc_time(2008,2,17,20,53,43)
     firetime = a.fire_after_time(t_time2)
     firetime.hour.should == 0
     firetime.min.should == 0
@@ -80,7 +82,7 @@ context "Cront Trigger in general" do
 
   specify "should wrap to next week for wday restirctions" do
     a = BackgrounDRb::CronTrigger.new("0 0 */5 * * 0-1 *")
-    t_time = Time.parse("Mon Feb 18 20:53:43 +0530 2008")
+    t_time = Time.utc_time(2008,2,18,20,53,43)
     firetime = a.fire_after_time(t_time)
     firetime.hour.should == 0
     firetime.min.should == 0
@@ -90,7 +92,7 @@ context "Cront Trigger in general" do
   end
 
   specify "should return firetime based on day restriction" do
-    t_time = Time.parse("Wed Feb 13 20:53:43 +0530 2008")
+    t_time = Time.utc_time(2008,2,13,20,53,43)
     # 21st of every month run every 5 hour
     a = BackgrounDRb::CronTrigger.new("0 0 */5 21 * * *")
     firetime = a.fire_after_time(t_time)
@@ -100,9 +102,9 @@ context "Cront Trigger in general" do
     firetime.day.should == 21
     firetime.month.should == 2
 
-    t_time = Time.parse("Wed Feb 22 20:53:43 +0530 2008")
+    t_time = Time.utc_time(2008,2,22,20,53,43)
     # 21st of every month run every 5 hour
-    a = BackgrounDRb::CronTrigger.new("0 0 */5 21 * * *")
+    a = BackgrounDRb::CronTrigger.new("0 0 */5 21 * * *")    
     firetime = a.fire_after_time(t_time)
     firetime.hour.should == 0
     firetime.min.should == 0
@@ -112,7 +114,7 @@ context "Cront Trigger in general" do
   end
 
   specify "for feb month should take into account day count" do
-    t_time = Time.parse("Thu Feb 28 20:53:43 +0530 2008")
+    t_time = Time.utc_time(2008,2,28,20,53,43)
     # 21st of every month run every 5 hour
     a = BackgrounDRb::CronTrigger.new("0 0 */5 30 * * *")
     firetime = a.fire_after_time(t_time)
@@ -124,7 +126,7 @@ context "Cront Trigger in general" do
   end
 
   specify "should take care if number of days is not available in month" do
-    t_time = Time.parse("Tue Nov 12 20:53:43 +0530 2007")
+    t_time = Time.utc_time(2007,11,12,20,53,43)
     # 21st of every month run every 5 hour
     a = BackgrounDRb::CronTrigger.new("0 0 */5 31 * * *")
     firetime = a.fire_after_time(t_time)
@@ -136,7 +138,7 @@ context "Cront Trigger in general" do
   end
 
   specify "should take care of periodic variations in day restrictions" do
-    t_time = Time.parse("Tue Aug 12 20:53:43 +0530 2007")
+    t_time = Time.utc_time(2007,8,12,20,53,43)
     a = BackgrounDRb::CronTrigger.new("0 0 */5 */2 1-5 * *")
     firetime = a.fire_after_time(t_time)
     firetime.hour.should == 0
@@ -146,7 +148,7 @@ context "Cront Trigger in general" do
     firetime.month.should == 1
     firetime.year.should == 2008
 
-    t_time = Time.parse("Tue Aug 12 20:53:43 +0530 2007")
+    t_time = Time.utc_time(2007,8,12,20,53,43)
     a = BackgrounDRb::CronTrigger.new("0 0 */5 */3 1-5 * *")
     firetime = a.fire_after_time(t_time)
     firetime.hour.should == 0
@@ -156,7 +158,7 @@ context "Cront Trigger in general" do
     firetime.month.should == 1
     firetime.year.should == 2008
 
-    t_time = Time.parse("Tue Aug 12 20:53:43 +0530 2007")
+    t_time = Time.utc_time(2007,8,12,20,53,43)
     a = BackgrounDRb::CronTrigger.new("0 0 */1 */7 1-5 * *")
     firetime = a.fire_after_time(t_time)
     firetime.hour.should == 0
@@ -168,7 +170,7 @@ context "Cront Trigger in general" do
   end
 
   specify "should return firetime based on hour restriction" do
-    t_time = Time.parse("Wed Feb 13 20:53:43 +0530 2008")
+    t_time = Time.utc_time(2008,2,13,20,53,43)
     a = BackgrounDRb::CronTrigger.new("0 0 */5 * * * *")
     firetime = a.fire_after_time(t_time)
     firetime.hour.should == 0
@@ -181,7 +183,7 @@ context "Cront Trigger in general" do
   specify "should take care of both fuck restrictions" do
 
     # in case of conflict between day and wday options, we should chose one closer to current time
-    t_time = Time.parse("Tue Aug 12 20:53:43 +0530 2007")
+    t_time = Time.utc_time(2007,8,12,20,53,43)
     a = BackgrounDRb::CronTrigger.new("0 0 */5 */3 1-5 3-5 *")
     firetime = a.fire_after_time(t_time)
     firetime.hour.should == 0
@@ -195,7 +197,7 @@ context "Cront Trigger in general" do
 
   specify "for user reported trigger" do
     # on friday
-    t_time = Time.parse("Fri Jan 18 4:53:43 +0530 2008")
+    t_time = Time.utc_time(2008,1,18,4,53,43)
     a = BackgrounDRb::CronTrigger.new("0 0/5 09-17 * * 1,3,5 *")
     firetime = a.fire_after_time(t_time)
     firetime.hour.should == 9
@@ -205,7 +207,7 @@ context "Cront Trigger in general" do
     firetime.month.should == 1
     firetime.year.should == 2008
 
-    t_time = Time.parse("Fri Jan 18 9:53:43 +0530 2008")
+    t_time = Time.utc_time(2008,1,18,9,53,43)
     a = BackgrounDRb::CronTrigger.new("0 0/5 09-17 * * 1,3,5 *")
     firetime = a.fire_after_time(t_time)
     firetime.hour.should == 9
@@ -216,7 +218,7 @@ context "Cront Trigger in general" do
     firetime.day.should == 18
     firetime.year.should == 2008
 
-    t_time = Time.parse("Sat Jan 19 4:53:43 +0530 2008")
+    t_time = Time.utc_time(2008,1,19,4,53,43)
     a = BackgrounDRb::CronTrigger.new("0 0/5 09-17 * * 1,3,5 *")
     firetime = a.fire_after_time(t_time)
     firetime.hour.should == 9
@@ -227,7 +229,7 @@ context "Cront Trigger in general" do
     firetime.day.should == 21
     firetime.year.should == 2008
 
-    t_time = Time.parse("Mon Jan 21 4:53:43 +0530 2008")
+    t_time = Time.utc_time(2008,1,21,4,53,43)
     a = BackgrounDRb::CronTrigger.new("0 0/5 09-17 * * 1,3,5 *")
     firetime = a.fire_after_time(t_time)
     firetime.hour.should == 9
@@ -238,7 +240,7 @@ context "Cront Trigger in general" do
     firetime.day.should == 21
     firetime.year.should == 2008
 
-    t_time = Time.parse("Tue Jan 1 4:53:43 +0530 2008")
+    t_time = Time.utc_time(2008,1,1,4,53,43)
     a = BackgrounDRb::CronTrigger.new("0 0/5 09-17 * * 1,3,5 *")
     firetime = a.fire_after_time(t_time)
     firetime.hour.should == 9
@@ -251,7 +253,7 @@ context "Cront Trigger in general" do
   end
 
   specify "should return firetime based on month restriction" do
-    t_time = Time.parse("Wed Feb 13 20:53:43 +0530 2008")
+    t_time = Time.utc_time(2008,2,13,20,53,43)
     a = BackgrounDRb::CronTrigger.new("0 0 */5 * * * *")
     firetime = a.fire_after_time(t_time)
     firetime.hour.should == 0
@@ -262,7 +264,7 @@ context "Cront Trigger in general" do
   end
 
   specify "should run for weekdays " do
-    t_time = Time.parse("Wed Feb 13 20:53:43 +0530 2008")
+    t_time = Time.utc_time(2008,2,13,20,53,43)
     a = BackgrounDRb::CronTrigger.new("0 0 2 * * 1-5 *")
     firetime = a.fire_after_time(t_time)
     firetime.hour.should == 2
@@ -270,7 +272,7 @@ context "Cront Trigger in general" do
     firetime.sec.should == 0
     firetime.wday.should == 4
 
-    t_time = Time.parse("Fri June 6 20:53:43 +0530 2008")
+    t_time = Time.utc_time(2008,6,6,20,53,43)
     a = BackgrounDRb::CronTrigger.new("0 0 2 * * 1-5 *")
     firetime = a.fire_after_time(t_time)
     firetime.hour.should == 2
