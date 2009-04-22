@@ -30,6 +30,19 @@ when 'status'
     exit!(daemon.status)
   end
 else
+  require "logger"
+  require "packet"
+  require "optparse"
+
+  require "bdrb_config"
+  require RAILS_HOME + "/config/boot"
+  require "active_support"
+
+  BackgrounDRb::Config.parse_cmd_options ARGV
+
+  require RAILS_HOME + "/config/environment"
+  require "bdrb_job_queue"
+  require "backgroundrb_server"
   BackgrounDRb::MasterProxy.new()
 end
 
