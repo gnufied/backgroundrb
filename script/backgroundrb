@@ -9,7 +9,9 @@ WORKER_LOAD_ENV = File.join(RAILS_HOME,"script","load_worker_env")
 $LOAD_PATH.unshift(WORKER_ROOT)
 
 require 'rubygems'
+require "active_support"
 require 'bdrb_config'
+
 BDRB_CONFIG = BackgrounDRb::Config.read_config("#{RAILS_HOME}/config/backgroundrb.yml")
 PID_FILE = "#{RAILS_HOME}/tmp/pids/backgroundrb_#{BDRB_CONFIG[:backgroundrb][:port]}.pid"
 SERVER_LOGGER = "#{RAILS_HOME}/log/backgroundrb_debug_#{BDRB_CONFIG[:backgroundrb][:port]}.log"
@@ -34,10 +36,7 @@ else
   require "packet"
   require "optparse"
 
-  require "bdrb_config"
   require RAILS_HOME + "/config/boot"
-  require "active_support"
-
   BackgrounDRb::Config.parse_cmd_options ARGV
 
   require RAILS_HOME + "/config/environment"
