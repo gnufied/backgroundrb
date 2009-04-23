@@ -15,7 +15,7 @@ module BackgrounDRb
       worker_method = method_id.to_s
       arguments = args.first
 
-      arg,job_key,host_info,scheduled_at = arguments && arguments.values_at(:arg,:job_key,:host,:scheduled_at)
+      arg,job_key,host_info,scheduled_at,priority = arguments && arguments.values_at(:arg,:job_key,:host,:scheduled_at, :priority)
 
       # allow both arg and args
       arg ||= arguments && arguments[:args]
@@ -32,7 +32,7 @@ module BackgrounDRb
         method_name = $1
         marshalled_args = Marshal.dump(arg)
         enqueue_task(compact(:worker_name => worker_name.to_s,:worker_key => worker_key.to_s,
-                             :worker_method => method_name.to_s,:job_key => job_key.to_s,
+                             :worker_method => method_name.to_s,:job_key => job_key.to_s, :priority => priority,
                              :args => marshalled_args,:timeout => arguments ? arguments[:timeout] : nil,:scheduled_at => new_schedule))
        elsif worker_method =~ /^deq_(\w+)/i
         raise NoJobKey.new("Must specify a job key to dequeue tasks") if job_key.blank?
