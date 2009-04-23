@@ -1,13 +1,13 @@
 require File.join(File.dirname(__FILE__) + "/..","bdrb_test_helper")
 
 context "Cront Trigger in general" do
-  
+
   specify "should let tasks running at given time interval run" do
-        
+
     # every 5 seconds
     a = BackgrounDRb::CronTrigger.new("*/5 * * * * * *")
     t_time = Time.utc_time(2008,2,13,20,53,45)
-    firetime = a.fire_after_time(t_time)    
+    firetime = a.fire_after_time(t_time)
     firetime.min.should == 53
     firetime.sec.should == 45
     firetime.hour.should == 20
@@ -104,7 +104,7 @@ context "Cront Trigger in general" do
 
     t_time = Time.utc_time(2008,2,22,20,53,43)
     # 21st of every month run every 5 hour
-    a = BackgrounDRb::CronTrigger.new("0 0 */5 21 * * *")    
+    a = BackgrounDRb::CronTrigger.new("0 0 */5 21 * * *")
     firetime = a.fire_after_time(t_time)
     firetime.hour.should == 0
     firetime.min.should == 0
@@ -180,7 +180,7 @@ context "Cront Trigger in general" do
     firetime.month.should == 2
   end
 
-  specify "should take care of both fuck restrictions" do
+  specify "should take care of both day and wday restrictions" do
 
     # in case of conflict between day and wday options, we should chose one closer to current time
     t_time = Time.utc_time(2007,8,12,20,53,43)
