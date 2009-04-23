@@ -9,6 +9,7 @@ WORKER_LOAD_ENV = File.join(RAILS_HOME,"script","load_worker_env")
 $LOAD_PATH.unshift(WORKER_ROOT)
 
 require 'rubygems'
+require RAILS_HOME + "/config/boot"
 require "active_support"
 require 'bdrb_config'
 
@@ -36,7 +37,6 @@ else
   require "packet"
   require "optparse"
 
-  require RAILS_HOME + "/config/boot"
   BackgrounDRb::Config.parse_cmd_options ARGV
 
   require RAILS_HOME + "/config/environment"
