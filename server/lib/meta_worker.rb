@@ -307,7 +307,6 @@ module BackgrounDRb
 
     def log_exception exception_object
       STDERR.puts exception_object.to_s
-      STDERR.puts exception_object.backtrace.join("\n")
       STDERR.flush
     end
 
