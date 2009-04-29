@@ -127,7 +127,14 @@ module BackgrounDRb
         invoke_user_method(:create,worker_options[:data])
       end
       if run_persistent_jobs?
-        add_periodic_timer(persistent_delay.to_i) { check_for_enqueued_tasks }
+        add_periodic_timer(persistent_delay.to_i) {
+          begin
+            check_for_enqueued_tasks
+          rescue Object => e
+            puts("Error while running persistent task : #{Time.now}")
+            log_exception(e.backtrace)
+          end
+        }
       end
       write_pid_file(t_worker_key)
     end
