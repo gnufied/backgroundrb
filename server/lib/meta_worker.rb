@@ -323,12 +323,12 @@ module BackgrounDRb
           end
           [t_result,"ok"]
         rescue Object => bdrb_error
-          puts "Error calling method #{user_method} with #{args} on worker #{worker_name}"
+          puts "Error calling method #{user_method} with #{args} on worker #{worker_name} at #{Time.now}"
           log_exception(bdrb_error)
           [t_result,"error"]
         end
       else
-        puts "Trying to invoke method #{user_method} with #{args} on worker #{worker_name} failed because no such method is defined on the worker"
+        puts "Trying to invoke method #{user_method} with #{args} on worker #{worker_name} failed because no such method is defined on the worker at #{Time.now}"
         [nil,"error"]
       end
     end
