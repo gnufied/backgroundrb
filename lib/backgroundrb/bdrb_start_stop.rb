@@ -36,14 +36,14 @@ module BackgrounDRb
     # 3 program is not running
     def status
       @status ||= begin
-        if pidfile_exists? and process_running?
-          0
-        elsif pidfile_exists? # but not process_running
-          1
-        else
-          3
-        end
-      end
+                    if pidfile_exists? and process_running?
+                      0
+                    elsif pidfile_exists? # but not process_running
+                      1
+                    else
+                      3
+                    end
+                  end
 
       return @status
     end
@@ -91,7 +91,17 @@ module BackgrounDRb
       require "bdrb_job_queue"
       require "backgroundrb_server"
 
-      main_pid = fork do
+      #proper way to daemonize - double fork to ensure parent can have no interest in the grandchild
+      if fork                     # Parent exits, child continues.
+        sleep(5)
+        exit(0)
+      else
+        Process.setsid                   # Become session leader.
+
+        op = File.open(PID_FILE, "w")
+        op.write(Process.pid().to_s)
+        op.close
+
         if BDRB_CONFIG[:backgroundrb][:log].nil? or BDRB_CONFIG[:backgroundrb][:log] != 'foreground'
           redirect_io(SERVER_LOGGER)
         end
@@ -99,7 +109,7 @@ module BackgrounDRb
         BackgrounDRb::MasterProxy.new()
       end
 
-      File.open(PID_FILE, "w") {|pidfile| pidfile.write(main_pid)}
+      #File.open(PID_FILE, "w") {|pidfile| pidfile.write(main_pid)}
     end
 
     def kill_process(pid_file)
