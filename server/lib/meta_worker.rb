@@ -306,7 +306,11 @@ module BackgrounDRb
     end
 
     def log_exception exception_object
-      STDERR.puts exception_object.to_s
+      if exception_object.is_a?(Array)
+        STDERR.puts exception_object.each { |e| e << "\n" }
+      else
+        STDERR.puts exception_object.to_s
+      end
       STDERR.flush
     end
 
