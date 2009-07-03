@@ -19,9 +19,8 @@ BDRB_CONFIG = BackgrounDRb::Config.read_config("#{RAILS_HOME}/config/backgroundr
 
 if !(::Packet::WorkerRunner::WORKER_OPTIONS[:worker_env] == false)
   require RAILS_HOME + "/config/environment"
-  if(Object.const_defined?(:Rails) && Rails.version < "2.2.2")
-    ActiveRecord::Base.allow_concurrency = true
-  elsif(Object.const_defined?(:RAILS_GEM_VERSION) && RAILS_GEM_VERSION < "2.2.2")
+  if (Object.const_defined?(:Rails) && (!Rails.respond_to?(:version) || Rails.version < "2.2.2")) ||
+     (Object.const_defined?(:RAILS_GEM_VERSION) && RAILS_GEM_VERSION < "2.2.2")
     ActiveRecord::Base.allow_concurrency = true
   end
 end
