@@ -162,7 +162,7 @@ module BackgrounDRb
             check_for_enqueued_tasks
           rescue Object => bdrb_error
             puts("Error while running persistent task : #{Time.now}")
-            log_exception(bdrb_error)
+            log_exception(bdrb_error, 'worker_init')
           end
         }
       end
@@ -328,19 +328,29 @@ module BackgrounDRb
       begin
         send_data(input)
       rescue Object => bdrb_error
-        log_exception(bdrb_error)
+        log_exception(bdrb_error, 'send_response', input, output, result_flag)
         input[:data] = "invalid_result_dump_check_log"
         input[:result_flag] = "error"
         send_data(input)
       end
     end
 
-    def log_exception exception_object
-      if exception_object.is_a?(Array)
-        STDERR.puts exception_object.each { |e| e << "\n" }
+    # Improve usefulness of the exception messages
+    def log_exception exception_object, method=nil, *args
+      msg = ["********** EXCEPTION(MetaWorker) - #{Time.now}  **********"]
+      msg << "#{self.class.to_s}##{method}(#{args.length == 0 ? '' : args.inspect})"
+      case exception_object
+      when Array
+        # Recurse and return so we don't log from here
+        exception_object.each { |e| log_exception(e, method, args) }
+        return
+      when Exception
+        msg << exception_object.to_s
+        msg += exception_object.backtrace if exception_object.backtrace
       else
-        STDERR.puts exception_object.to_s
+        msg << exception_object.to_s
       end
+      puts msg.join("\n")
       STDERR.flush
     end
 
@@ -357,7 +367,7 @@ module BackgrounDRb
           [t_result,"ok"]
         rescue Object => bdrb_error
           puts "Error calling method #{user_method} with #{args} on worker #{worker_name} at #{Time.now}"
-          log_exception(bdrb_error)
+          log_exception(bdrb_error, user_method, args)
           [t_result,"error"]
         end
       else
@@ -419,7 +429,7 @@ module BackgrounDRb
       begin
         ActiveRecord::Base.verify_active_connections! if defined?(ActiveRecord)
       rescue Object => bdrb_error
-        log_exception(bdrb_error)
+        log_exception(bdrb_error, 'check_db_connection')
       end
     end
 

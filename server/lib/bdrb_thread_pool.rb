@@ -105,9 +105,21 @@ module BackgrounDRb
       end
     end
 
+    # Improve usefulness of the exception messages
     def log_exception exception_object
-      STDERR.puts exception_object.to_s
-      STDERR.puts exception_object.backtrace.join("\n")
+      msg = ["********** EXCEPTION(ThreadPool) - #{Time.now} **********"]
+      case exception_object
+      when Array
+        # Recurse and return so we don't log from here
+        exception_object.each { |e| log_exception(e) }
+        return
+      when Exception
+        msg << exception_object.to_s
+        msg += exception_object.backtrace if exception_object.backtrace
+      else
+        msg << exception_object.to_s
+      end
+      puts msg.join("\n")
       STDERR.flush
     end
 
