@@ -130,9 +130,9 @@ module BackgrounDRb
         add_periodic_timer(persistent_delay.to_i) {
           begin
             check_for_enqueued_tasks
-          rescue Object => e
+          rescue Object => bdrb_error
             puts("Error while running persistent task : #{Time.now}")
-            log_exception(e.backtrace)
+            log_exception(bdrb_error)
           end
         }
       end
