@@ -1,18 +1,48 @@
 module BackgrounDRb
-  # this class is a dummy class that implements things required for passing data to
-  # actual logger worker
-  class PacketLogger
+  # This class implements the Logger interface and passes the actual work off the log_worker to record
+  class PacketLogger < Logger
     def initialize(worker,log_flag = true)
+      # Initialize logger with no device
+      super(nil)
+
+      # Initialize packet specific options
+      # TODO Eliminate log_flag, should be taken care of by @level of Logger
       @log_flag = log_flag
       @worker = worker
       @log_mutex = Mutex.new
     end
-    [:info,:debug,:warn,:error,:fatal].each do |m|
-      define_method(m) do |log_data|
-        return unless @log_flag
-        @log_mutex.synchronize do
-          @worker.send_request(:worker => :log_worker, :data => log_data)
+
+    # Need to override Logger methods that deal with @logdev
+    def <<(msg)
+      # Send log data directly
+      send_log_data(msg)
+    end
+    def add(severity, message=nil,progname=nil)
+      # TODO Anyway not to copy this from Logger class?
+      severity ||= UNKNOWN
+      if severity < @level
+        return true
+      end
+      prognam ||= @progname
+      if message.nil?
+        if block_given?
+          message = yield
+        else
+          message = progname
+          progname = @progname
         end
+      end
+      send_log_data(format_message(format_severity(severity), Time.now, progname, message))
+    end
+    def close
+      #noop
+    end
+
+    private
+    def send_log_data(log_data)
+      return unless @log_flag
+      @log_mutex.synchronize do
+        @worker.send_request(:worker => :log_worker, :data => log_data)
       end
     end
   end
