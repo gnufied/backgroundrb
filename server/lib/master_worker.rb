@@ -126,6 +126,15 @@ module BackgrounDRb
     end
 
     def worker_methods worker_name_key
+      # If a worker silently fails then live_workers[worker_name_key] is nil;
+      #  we can check for that and either auto-restart it, or do something better than throw an error
+      if reactor.live_workers[worker_name_key].nil?
+        debug_logger.info("DIED: Worker #{worker_name_key} has died silently; attempting to auto-restart.")
+        # FIXME Vulnerability here I think, this depends on the name_key being the same as the filename?
+        reactor.start_worker(:worker => worker_name_key)
+      end
+
+      # Now always save to grab the invokable worker methods
       reactor.live_workers[worker_name_key].invokable_worker_methods
     end
 
