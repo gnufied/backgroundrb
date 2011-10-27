@@ -89,7 +89,7 @@ context "Worker Proxy in general" do
         value[:priority] == priority
       }.once
     end
-    
+
     @worker_proxy.enq_foobar(:job_key => '4', :priority => 4, :arg => :hello)
     @worker_proxy.enq_foobar(:job_key => '2', :priority => 2, :arg => :hello)
     @worker_proxy.enq_foobar(:job_key => '10', :priority => 10, :arg => :hello)
