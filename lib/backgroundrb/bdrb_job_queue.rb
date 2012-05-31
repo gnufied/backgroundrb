@@ -65,11 +65,13 @@ class BdrbJobQueue < ActiveRecord::Base
   # Mark a job as finished
   def finish!
     ActiveRecord::Base.verify_active_connections!
+    @job_key_number = job_key unless @job_key_number
     self.class.transaction do
       self.finished = 1
       self.finished_at = Time.now.utc
-      self.job_key = "finished_#{Time.now.utc.to_i}_#{job_key}"
+      self.job_key = "finished_#{Time.now.utc.to_i}_#{@job_key_number}"
       self.save
+
     end
     Thread.current[:persistent_job_id] = nil
     Thread.current[:job_key] = nil

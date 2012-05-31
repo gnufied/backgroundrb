@@ -112,6 +112,40 @@ module BackgrounDRb
       #File.open(PID_FILE, "w") {|pidfile| pidfile.write(main_pid)}
     end
 
+    def start_bdrb_no_fork
+      require "rubygems"
+      require "yaml"
+      require "erb"
+      require "logger"
+      require "packet"
+      require "optparse"
+
+      require "bdrb_config"
+      require RAILS_HOME + "/config/boot"
+      require "active_support"
+
+      BackgrounDRb::Config.parse_cmd_options ARGV
+
+      require RAILS_HOME + "/config/environment"
+      require "bdrb_job_queue"
+      require "backgroundrb_server"
+
+      Process.setsid                   # Become session leader.
+
+      op = File.open(PID_FILE, "w")
+      op.write(Process.pid().to_s)
+      op.close
+
+      if BDRB_CONFIG[:backgroundrb][:log].nil? or BDRB_CONFIG[:backgroundrb][:log] != 'foreground'
+        redirect_io(SERVER_LOGGER)
+      end
+      $0 = "backgroundrb master"
+      BackgrounDRb::MasterProxy.new()
+
+      #File.open(PID_FILE, "w") {|pidfile| pidfile.write(main_pid)}
+    end
+
+
     def kill_process(pid_file)
       pid = File.open(pid_file, "r") { |pid_handle| pid_handle.gets.strip.to_i }
       pgid =  Process.getpgid(pid)

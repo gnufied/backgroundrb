@@ -1,18 +1,48 @@
 module BackgrounDRb
-  # this class is a dummy class that implements things required for passing data to
-  # actual logger worker
-  class PacketLogger
+  # This class implements the Logger interface and passes the actual work off the log_worker to record
+  class PacketLogger < Logger
     def initialize(worker,log_flag = true)
+      # Initialize logger with no device
+      super(nil)
+
+      # Initialize packet specific options
+      # TODO Eliminate log_flag, should be taken care of by @level of Logger
       @log_flag = log_flag
       @worker = worker
       @log_mutex = Mutex.new
     end
-    [:info,:debug,:warn,:error,:fatal].each do |m|
-      define_method(m) do |log_data|
-        return unless @log_flag
-        @log_mutex.synchronize do
-          @worker.send_request(:worker => :log_worker, :data => log_data)
+
+    # Need to override Logger methods that deal with @logdev
+    def <<(msg)
+      # Send log data directly
+      send_log_data(msg)
+    end
+    def add(severity, message=nil,progname=nil)
+      # TODO Anyway not to copy this from Logger class?
+      severity ||= UNKNOWN
+      if severity < @level
+        return true
+      end
+      prognam ||= @progname
+      if message.nil?
+        if block_given?
+          message = yield
+        else
+          message = progname
+          progname = @progname
         end
+      end
+      send_log_data(format_message(format_severity(severity), Time.now, progname, message))
+    end
+    def close
+      #noop
+    end
+
+    private
+    def send_log_data(log_data)
+      return unless @log_flag
+      @log_mutex.synchronize do
+        @worker.send_request(:worker => :log_worker, :data => log_data)
       end
     end
   end
@@ -130,9 +160,9 @@ module BackgrounDRb
         add_periodic_timer(persistent_delay.to_i) {
           begin
             check_for_enqueued_tasks
-          rescue Object => e
+          rescue Object => bdrb_error
             puts("Error while running persistent task : #{Time.now}")
-            log_exception(e.backtrace)
+            log_exception(bdrb_error, 'worker_init')
           end
         }
       end
@@ -298,19 +328,29 @@ module BackgrounDRb
       begin
         send_data(input)
       rescue Object => bdrb_error
-        log_exception(bdrb_error)
+        log_exception(bdrb_error, 'send_response', input, output, result_flag)
         input[:data] = "invalid_result_dump_check_log"
         input[:result_flag] = "error"
         send_data(input)
       end
     end
 
-    def log_exception exception_object
-      if exception_object.is_a?(Array)
-        STDERR.puts exception_object.each { |e| e << "\n" }
+    # Improve usefulness of the exception messages
+    def log_exception exception_object, method=nil, *args
+      msg = ["********** EXCEPTION(MetaWorker) - #{Time.now}  **********"]
+      msg << "#{self.class.to_s}##{method}(#{args.length == 0 ? '' : args.inspect})"
+      case exception_object
+      when Array
+        # Recurse and return so we don't log from here
+        exception_object.each { |e| log_exception(e, method, args) }
+        return
+      when Exception
+        msg << exception_object.to_s
+        msg += exception_object.backtrace if exception_object.backtrace
       else
-        STDERR.puts exception_object.to_s
+        msg << exception_object.to_s
       end
+      puts msg.join("\n")
       STDERR.flush
     end
 
@@ -327,7 +367,7 @@ module BackgrounDRb
           [t_result,"ok"]
         rescue Object => bdrb_error
           puts "Error calling method #{user_method} with #{args} on worker #{worker_name} at #{Time.now}"
-          log_exception(bdrb_error)
+          log_exception(bdrb_error, user_method, args)
           [t_result,"error"]
         end
       else
@@ -389,7 +429,7 @@ module BackgrounDRb
       begin
         ActiveRecord::Base.verify_active_connections! if defined?(ActiveRecord)
       rescue Object => bdrb_error
-        log_exception(bdrb_error)
+        log_exception(bdrb_error, 'check_db_connection')
       end
     end
 

@@ -22,6 +22,7 @@ daemon = BackgrounDRb::StartStop.new
 
 case ARGV[0]
 when 'start'; daemon.start
+when 'start_no_fork'; daemon.start_brdb_no_fork
 when 'stop'; daemon.stop
 when 'restart'; daemon.stop;daemon.start
 when 'status'
