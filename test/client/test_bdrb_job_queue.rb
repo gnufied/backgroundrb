@@ -25,7 +25,7 @@ context "For BackgrounDRb job Queues" do
     BdrbJobQueue.insert_job(:priority => 1, :worker_name => "hello_world",:worker_method => "foovar",:job_key => "1",:args => "priority 1", :scheduled_at => Time.now.utc)
     BdrbJobQueue.insert_job(:priority => 10, :worker_name => "hello_world",:worker_method => "foovar",:job_key => "10",:args => "priority 10", :scheduled_at => Time.now.utc)
 
-    [10,4,1].each do |priority|      
+    [10,4,1].each do |priority|
       next_job = BdrbJobQueue.find_next("hello_world")
       next_job.taken.should == 1
       next_job.started_at.should.not.be nil

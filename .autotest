@@ -12,6 +12,6 @@ class Autotest
 
       result[filename] = File.stat(filename).mtime rescue next
     end
-    return result    
+    return result
   end
 end
